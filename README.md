@@ -305,3 +305,5 @@ docker run --rm -v glamavenue_uploads_data:/data -v "$PWD/backups:/backup" \
 Headings use **Playfair Display**, body uses **Inter**. The logo is recreated as
 an SVG in `frontend/src/components/Logo.tsx` — drop in the official artwork there
 (or in `frontend/public/`) to replace the monogram.
+#   G l o w A v e n u e  
+ 
