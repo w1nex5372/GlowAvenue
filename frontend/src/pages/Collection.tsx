@@ -63,7 +63,7 @@ export default function Collection() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+              <div className="product-grid">
                 {visible.map((p, i) => (
                   <ProductCard key={p.id} product={p} index={i} />
                 ))}

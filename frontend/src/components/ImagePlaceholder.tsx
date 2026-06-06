@@ -4,9 +4,13 @@ import Logo from './Logo';
 export default function ImagePlaceholder({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`flex items-center justify-center bg-gradient-to-br from-cream to-beige/70 ${className}`}
+      className={`flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-cream via-cream to-beige/60 ${className}`}
     >
-      <Logo variant="mark" className="h-1/3 w-1/3 text-gold/35" />
+      <Logo
+        variant="mark"
+        className="h-[26%] w-[26%] min-h-[36px] min-w-[36px] text-gold/30"
+      />
+      <span className="text-[0.55rem] uppercase tracking-luxe text-ink/25">GlamAvenue</span>
     </div>
   );
 }

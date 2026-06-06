@@ -9,6 +9,9 @@ import ProductGallery from '../components/ProductGallery';
 import MarketplaceButtons from '../components/MarketplaceButtons';
 import Loader from '../components/Loader';
 
+// Brand quality promises shown on every product (presentation, not per-item data).
+const FEATURES = ['Tarnish Resistant', 'Waterproof', 'Hypoallergenic', 'UK Delivery'];
+
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
   const settings = useSettings();
@@ -48,43 +51,53 @@ export default function ProductPage() {
   return (
     <section className="bg-white">
       <div className="container-luxe py-10 md:py-16">
-        <nav className="mb-8 flex items-center gap-1 text-xs text-ink/45">
+        <nav className="mb-8 flex flex-wrap items-center gap-1 text-xs text-ink/45">
           <Link to="/" className="hover:text-gold">Home</Link>
-          <ChevronRight size={14} />
+          <ChevronRight size={14} className="shrink-0" />
           <Link to="/collection" className="hover:text-gold">Collection</Link>
-          <ChevronRight size={14} />
+          <ChevronRight size={14} className="shrink-0" />
           <span className="text-ink/70">{product.name}</span>
         </nav>
 
         <div className="grid gap-10 md:grid-cols-2 lg:gap-16">
-          <ProductGallery images={product.images} alt={product.name} />
+          <div className="md:sticky md:top-28 md:self-start">
+            <ProductGallery images={product.images} alt={product.name} />
+          </div>
 
           <div className="flex flex-col">
             <span className="eyebrow">{product.category}</span>
-            <h1 className="mt-2 font-serif text-3xl leading-tight sm:text-4xl">{product.name}</h1>
-            <p className="mt-4 font-serif text-2xl text-ink">{formatPrice(product.price)}</p>
+            <h1 className="mt-3 font-serif text-3xl leading-[1.15] sm:text-4xl">{product.name}</h1>
 
-            <div className="mt-3 flex items-center gap-2 text-sm">
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <p className="font-serif text-2xl text-ink">{formatPrice(product.price)}</p>
               {inStock ? (
-                <span className="inline-flex items-center gap-1.5 text-green-700">
-                  <Check size={16} /> In stock
+                <span className="inline-flex items-center gap-1.5 text-sm text-green-700">
+                  <Check size={15} /> In stock
                 </span>
               ) : (
-                <span className="text-ink/50">Currently sold out</span>
+                <span className="text-sm text-ink/50">Currently sold out</span>
               )}
             </div>
 
+            <ul className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2.5 text-sm text-ink/60 sm:flex sm:flex-wrap">
+              {FEATURES.map((f) => (
+                <li key={f} className="inline-flex items-center gap-2">
+                  <Check size={15} className="shrink-0 text-gold-dark" /> {f}
+                </li>
+              ))}
+            </ul>
+
             {product.description && (
-              <p className="mt-6 leading-relaxed text-ink/70">{product.description}</p>
+              <p className="mt-7 leading-relaxed text-ink/70">{product.description}</p>
             )}
 
-            <dl className="mt-6 space-y-2 border-y border-ink/10 py-5 text-sm">
+            <dl className="mt-7 space-y-2.5 border-y border-ink/10 py-5 text-sm">
               <div className="flex gap-3">
-                <dt className="w-28 text-ink/45">Material</dt>
+                <dt className="w-28 shrink-0 text-ink/45">Material</dt>
                 <dd className="text-ink/80">{product.material}</dd>
               </div>
               <div className="flex gap-3">
-                <dt className="w-28 text-ink/45">Category</dt>
+                <dt className="w-28 shrink-0 text-ink/45">Category</dt>
                 <dd className="text-ink/80">{product.category}</dd>
               </div>
             </dl>

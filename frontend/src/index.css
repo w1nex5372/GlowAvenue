@@ -61,4 +61,14 @@
   .card-surface {
     @apply rounded-2xl bg-white shadow-card;
   }
+
+  /* Consistent catalog grid — generous vertical rhythm for a premium feel. */
+  .product-grid {
+    @apply grid grid-cols-2 gap-x-5 gap-y-10 sm:gap-x-6 sm:gap-y-14 lg:grid-cols-4;
+  }
+
+  /* Square product image tile, used on cards. */
+  .product-media {
+    @apply relative block aspect-square overflow-hidden rounded-2xl bg-cream ring-1 ring-ink/5;
+  }
 }

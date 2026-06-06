@@ -83,7 +83,7 @@ export default function Home() {
             {loading ? (
               <Loader />
             ) : (
-              <div className="mt-12 grid grid-cols-2 gap-6 lg:grid-cols-4">
+              <div className="mt-12 product-grid">
                 {featured.map((p, i) => (
                   <ProductCard key={p.id} product={p} index={i} />
                 ))}
@@ -128,7 +128,7 @@ export default function Home() {
                 View all <ArrowRight size={16} />
               </Link>
             </div>
-            <div className="mt-12 grid grid-cols-2 gap-6 lg:grid-cols-4">
+            <div className="mt-12 product-grid">
               {latest.map((p, i) => (
                 <ProductCard key={p.id} product={p} index={i} />
               ))}

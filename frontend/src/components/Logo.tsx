@@ -38,7 +38,7 @@ function Monogram({ className = '' }: { className?: string }) {
 
 export default function Logo({ variant = 'inline', tagline = false, className = '' }: LogoProps) {
   if (variant === 'mark') {
-    return <Monogram className={`h-10 w-10 ${className}`} />;
+    return <Monogram className={className || 'h-10 w-10'} />;
   }
 
   if (variant === 'stacked') {
