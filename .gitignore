@@ -17,7 +17,10 @@ build/
 # Prisma generated client
 **/node_modules/.prisma/
 
-# Uploaded product images (runtime user content)
+# Uploaded product images (runtime user content).
+# Docker bind mount (./uploads) and the local-dev default (backend/uploads).
+/uploads/products/*
+!/uploads/products/.gitkeep
 backend/uploads/products/*
 !backend/uploads/products/.gitkeep
 

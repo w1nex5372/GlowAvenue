@@ -188,10 +188,72 @@ PUT    /api/admin/settings
 
 ## 6. Uploads
 
-Images are stored on disk in the backend container at `/app/uploads/products/`
-(persisted in the `uploads_data` Docker volume) and served publicly at
+Uploaded images are written to the host folder **`./uploads/products/`** (bind
+mounted into the backend at `/app/uploads/products/`) and served publicly at
 `/uploads/products/<file>`. Allowed: JPG, PNG, WEBP, max 5MB each. Only image
 URLs are stored in the database, never binary data.
+
+---
+
+## Data persistence
+
+Your data lives in two places and **survives rebuilds**:
+
+| What | Where it lives | Survives `down` + `up --build`? |
+| ---- | -------------- | ------------------------------- |
+| **PostgreSQL data** (products, settings) | Docker named volume `glamavenue_postgres_data` | ✅ Yes |
+| **Uploaded images** | Host folder **`./uploads/`** (bind mount) | ✅ Yes |
+
+- Uploaded images are **not** stored only inside the backend container — they
+  are real files in `./uploads/products/` on the host, easy to see and back up.
+- The seed **only runs on an empty database** (zero products), so it can never
+  overwrite real products or image links.
+
+### Safe restart (keeps all data)
+
+```bash
+docker compose down
+docker compose up -d --build
+```
+
+### ⚠️ Dangerous — wipes the database
+
+```bash
+docker compose down -v      # removes named volumes → DELETES all products/settings
+```
+
+`down -v` deletes the `glamavenue_postgres_data` volume. Uploaded images in
+`./uploads/` are **not** removed by `-v` (they're a host folder), but the
+products referencing them would be gone, so re-seed/re-add afterwards.
+
+### Verify persistence (quick test)
+
+1. In the admin, **add a product and upload an image**, then save.
+2. Note the product page URL and the image URL (`/uploads/products/<file>`).
+3. Rebuild:
+   ```bash
+   docker compose down
+   docker compose up -d --build
+   ```
+4. Confirm the product still exists:
+   ```bash
+   curl -s http://localhost/api/products | grep -o '"slug":"[^"]*"'
+   ```
+5. Confirm the uploaded image still loads publicly (expect `HTTP 200`):
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}\n" http://localhost/uploads/products/<file>
+   ```
+
+### Back up
+
+```bash
+# Database
+docker compose exec -T postgres pg_dump -U glamavenue glamavenue_db \
+  | gzip > backups/glamavenue-$(date +%F).sql.gz
+
+# Uploaded images — just copy the folder
+cp -r ./uploads ./backups/uploads-$(date +%F)
+```
 
 ---
 
@@ -282,9 +344,8 @@ docker compose exec -T postgres pg_dump -U glamavenue glamavenue_db \
   | gzip > backups/glamavenue-$(date +%F).sql.gz
 find backups -name 'glamavenue-*.sql.gz' -mtime +7 -delete
 
-# Weekly uploaded-images backup (the uploads_data Docker volume)
-docker run --rm -v glamavenue_uploads_data:/data -v "$PWD/backups:/backup" \
-  alpine tar czf /backup/uploads-$(date +%F).tar.gz -C /data .
+# Weekly uploaded-images backup — uploads are a host folder, just archive it
+tar czf backups/uploads-$(date +%F).tar.gz ./uploads
 ```
 
 > Restore a DB dump with:
@@ -305,5 +366,4 @@ docker run --rm -v glamavenue_uploads_data:/data -v "$PWD/backups:/backup" \
 Headings use **Playfair Display**, body uses **Inter**. The logo is recreated as
 an SVG in `frontend/src/components/Logo.tsx` — drop in the official artwork there
 (or in `frontend/public/`) to replace the monogram.
-#   G l o w A v e n u e  
- 
+# GlowAvenue

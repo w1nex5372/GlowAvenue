@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import type { Product } from '../lib/types';
 import { formatPrice } from '../lib/format';
 import ImagePlaceholder from './ImagePlaceholder';
-import MarketplaceButtons, { hasMarketLinks } from './MarketplaceButtons';
+import MarketplaceButtons from './MarketplaceButtons';
 
 export default function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
   const cover = product.images?.[0];
@@ -49,20 +49,20 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
           </p>
         )}
 
-        <p className="mt-auto pt-4 font-serif text-lg text-ink sm:text-xl">
-          {formatPrice(product.price)}
-        </p>
+        {/* Bottom-anchored block keeps price, CTA and icons aligned across cards. */}
+        <div className="mt-auto pt-4">
+          <p className="font-serif text-lg text-ink sm:text-xl">{formatPrice(product.price)}</p>
 
-        <Link to={`/product/${product.slug}`} className="btn-outline mt-3 w-full">
-          View Details
-        </Link>
+          <Link to={`/product/${product.slug}`} className="btn-outline mt-3 w-full">
+            View Details
+          </Link>
 
-        {hasMarketLinks(product) && (
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-[0.6rem] uppercase tracking-wide2 text-ink/40">Buy at</span>
+          {/* Reserved single-row slot: present even with no links, so all cards
+              line up; icons only render when links exist. */}
+          <div className="mt-3 flex min-h-[2.25rem] flex-wrap items-center gap-2">
             <MarketplaceButtons product={product} variant="compact" />
           </div>
-        )}
+        </div>
       </div>
     </motion.article>
   );
