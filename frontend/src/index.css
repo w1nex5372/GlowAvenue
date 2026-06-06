@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-serif;
+  }
+
+  ::selection {
+    @apply bg-gold/30 text-ink;
+  }
+}
+
+@layer components {
+  .container-luxe {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium
+      tracking-wide transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-gold {
+    @apply btn bg-gold text-ink hover:bg-gold-dark hover:text-white shadow-soft;
+  }
+
+  .btn-dark {
+    @apply btn bg-ink text-cream hover:bg-black;
+  }
+
+  .btn-outline {
+    @apply btn border border-ink/20 text-ink hover:border-gold hover:text-gold;
+  }
+
+  .eyebrow {
+    @apply text-xs uppercase tracking-luxe text-gold font-medium;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-ink/15 bg-white px-4 py-2.5 text-sm text-ink outline-none
+      transition placeholder:text-ink/30 focus:border-gold focus:ring-2 focus:ring-gold/20;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-ink/80;
+  }
+
+  .card-surface {
+    @apply rounded-2xl bg-white shadow-card;
+  }
+}

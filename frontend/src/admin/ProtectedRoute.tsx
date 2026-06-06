@@ -1,0 +1,9 @@
+import { Navigate, Outlet } from 'react-router-dom';
+import { auth } from '../lib/auth';
+
+export default function ProtectedRoute() {
+  if (!auth.isAuthenticated()) {
+    return <Navigate to="/admin/login" replace />;
+  }
+  return <Outlet />;
+}

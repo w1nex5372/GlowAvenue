@@ -1,0 +1,13 @@
+# Keep shell scripts LF so they run inside Linux containers.
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf
+
+# Normalise common text files
+*.ts text
+*.tsx text
+*.json text
+*.md text
+*.yml text
+*.yaml text
+*.css text
+*.html text
