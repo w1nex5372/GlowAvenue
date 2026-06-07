@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
@@ -15,9 +15,16 @@ const NAV = [
 export default function Header() {
   const settings = useSettings();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50">
+    <header className={`sticky top-0 z-50 transition-shadow duration-300 ${scrolled ? 'shadow-[0_4px_24px_rgba(0,0,0,0.35)]' : ''}`}>
       {settings.bannerText && (
         <div className="bg-gold text-center text-[0.7rem] font-medium uppercase tracking-luxe text-ink">
           <div className="container-luxe py-2">{settings.bannerText}</div>
@@ -85,6 +92,13 @@ export default function Header() {
                     {item.label}
                   </NavLink>
                 ))}
+                <Link
+                  to="/collection"
+                  onClick={() => setOpen(false)}
+                  className="btn-gold mt-2 text-center"
+                >
+                  Shop the Collection
+                </Link>
               </div>
             </motion.nav>
           )}

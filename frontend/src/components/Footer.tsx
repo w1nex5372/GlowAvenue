@@ -1,11 +1,23 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, Music2, Facebook, Mail } from 'lucide-react';
 import Logo from './Logo';
 import { useSettings } from '../lib/SettingsContext';
+import { api } from '../lib/api';
 
 export default function Footer() {
   const settings = useSettings();
   const year = new Date().getFullYear();
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    api.getProducts()
+      .then((products) => {
+        const cats = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
+        setCategories(cats);
+      })
+      .catch(() => {});
+  }, []);
 
   const socials = [
     { url: settings.instagramUrl, icon: Instagram, label: 'Instagram' },
@@ -15,8 +27,8 @@ export default function Footer() {
 
   return (
     <footer className="bg-ink text-cream">
-      <div className="container-luxe grid gap-12 py-16 md:grid-cols-3">
-        <div>
+      <div className="container-luxe grid gap-12 py-16 md:grid-cols-4">
+        <div className="md:col-span-1">
           <Link to="/" className="inline-block text-gold" aria-label="GlamAvenue home">
             <Logo variant="inline" tagline />
           </Link>
@@ -33,6 +45,24 @@ export default function Footer() {
             <li><Link to="/contact" className="transition hover:text-gold">Contact</Link></li>
           </ul>
         </div>
+
+        {categories.length > 0 && (
+          <div>
+            <h4 className="text-sm uppercase tracking-luxe text-gold">Browse</h4>
+            <ul className="mt-5 space-y-3 text-sm text-cream/75">
+              {categories.map((cat) => (
+                <li key={cat}>
+                  <Link
+                    to={`/collection?category=${encodeURIComponent(cat)}`}
+                    className="transition hover:text-gold"
+                  >
+                    {cat}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div>
           <h4 className="text-sm uppercase tracking-luxe text-gold">Stay in touch</h4>

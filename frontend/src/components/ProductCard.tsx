@@ -15,7 +15,7 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.3) }}
-      className="group flex flex-col"
+      className="group flex flex-col rounded-2xl transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-card"
     >
       <Link to={`/product/${product.slug}`} className="product-media">
         {cover ? (
@@ -59,7 +59,7 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
 
           {/* Reserved single-row slot: present even with no links, so all cards
               line up; icons only render when links exist. */}
-          <div className="mt-3 flex min-h-[2.25rem] flex-wrap items-center gap-2">
+          <div className="mt-3 min-h-[1.75rem]">
             <MarketplaceButtons product={product} variant="compact" />
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronRight, Check, Truck } from 'lucide-react';
+import { ChevronRight, Check, Truck, Share2 } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
 import type { Product } from '../lib/types';
 import { formatPrice } from '../lib/format';
@@ -10,7 +10,7 @@ import MarketplaceButtons from '../components/MarketplaceButtons';
 import Loader from '../components/Loader';
 
 // Brand quality promises shown on every product (presentation, not per-item data).
-const FEATURES = ['Tarnish Resistant', 'Waterproof', 'Hypoallergenic', 'UK Delivery'];
+const FEATURES = ['Tarnish Resistant', 'Waterproof', '18k Gold Plated', 'UK Delivery'];
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -18,6 +18,20 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: product?.name, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch { /* dismissed */ }
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -65,7 +79,18 @@ export default function ProductPage() {
           </div>
 
           <div className="flex flex-col">
-            <span className="eyebrow">{product.category}</span>
+            <div className="flex items-start justify-between gap-4">
+              <span className="eyebrow">{product.category}</span>
+              <button
+                type="button"
+                onClick={handleShare}
+                title="Share this product"
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-ink/15 px-3 py-1.5 text-xs text-ink/50 transition hover:border-gold hover:text-gold-dark"
+              >
+                {copied ? <Check size={13} /> : <Share2 size={13} />}
+                {copied ? 'Copied!' : 'Share'}
+              </button>
+            </div>
             <h1 className="mt-3 font-serif text-3xl leading-[1.15] sm:text-4xl">{product.name}</h1>
 
             <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">

@@ -6,8 +6,8 @@ interface MarketLink {
   label: string;
   short: string;
   icon: LucideIcon;
-  /** Subtle platform accent applied on hover/active (compact icons). */
-  accent: string;
+  /** Permanent brand color for compact icon buttons. */
+  style: string;
 }
 
 function getLinks(product: Product): MarketLink[] {
@@ -17,28 +17,28 @@ function getLinks(product: Product): MarketLink[] {
       label: 'Buy on eBay',
       short: 'eBay',
       icon: ShoppingBag,
-      accent: 'hover:border-gold hover:text-gold active:border-gold active:text-gold',
+      style: 'border-amber-300/70 bg-amber-50 text-amber-600 hover:bg-amber-100',
     },
     {
       url: product.tiktokUrl,
       label: 'Buy on TikTok',
       short: 'TikTok',
       icon: Music2,
-      accent: 'hover:border-ink hover:text-ink active:border-ink active:text-ink',
+      style: 'border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100',
     },
     {
       url: product.facebookUrl,
       label: 'Buy on Facebook',
-      short: 'Facebook',
+      short: 'FB',
       icon: Facebook,
-      accent: 'hover:border-[#1877F2] hover:text-[#1877F2] active:border-[#1877F2] active:text-[#1877F2]',
+      style: 'border-blue-200 bg-blue-50 text-[#1877F2] hover:bg-blue-100',
     },
     {
       url: product.instagramUrl,
       label: 'Message on Instagram',
-      short: 'Instagram',
+      short: 'IG',
       icon: Instagram,
-      accent: 'hover:border-[#E4405F] hover:text-[#E4405F] active:border-[#E4405F] active:text-[#E4405F]',
+      style: 'border-pink-200 bg-pink-50 text-[#E4405F] hover:bg-pink-100',
     },
   ].filter((l): l is MarketLink => Boolean(l.url));
 }
@@ -55,13 +55,12 @@ interface Props {
 export default function MarketplaceButtons({ product, variant = 'full' }: Props) {
   const links = getLinks(product);
 
-  // Compact: a neat row of subtle circular icon buttons (used on product cards).
-  // Returns a fragment so the parent controls the row layout. Empty links → null.
   if (variant === 'compact') {
     if (links.length === 0) return null;
     return (
-      <>
-        {links.map(({ url, short, icon: Icon, accent }) => (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[0.65rem] uppercase tracking-wide text-ink/35">Shop on</span>
+        {links.map(({ url, short, icon: Icon, style }) => (
           <a
             key={short}
             href={url}
@@ -70,12 +69,13 @@ export default function MarketplaceButtons({ product, variant = 'full' }: Props)
             onClick={(e) => e.stopPropagation()}
             aria-label={short}
             title={short}
-            className={`flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 text-ink/55 transition-colors ${accent}`}
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[0.65rem] font-medium transition-colors ${style}`}
           >
-            <Icon size={15} />
+            <Icon size={11} />
+            {short}
           </a>
         ))}
-      </>
+      </div>
     );
   }
 

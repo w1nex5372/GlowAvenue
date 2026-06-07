@@ -1,13 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { Product } from '../lib/types';
 import ProductCard from '../components/ProductCard';
 import Loader from '../components/Loader';
 
 export default function Collection() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [active, setActive] = useState('All');
+  const [active, setActive] = useState(searchParams.get('category') || 'All');
+
+  const handleFilter = (cat: string) => {
+    setActive(cat);
+    if (cat === 'All') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ category: cat });
+    }
+  };
 
   useEffect(() => {
     api
@@ -50,7 +61,7 @@ export default function Collection() {
                     <button
                       key={c}
                       type="button"
-                      onClick={() => setActive(c)}
+                      onClick={() => handleFilter(c)}
                       className={`rounded-full px-5 py-2 text-sm transition ${
                         active === c
                           ? 'bg-ink text-cream'

@@ -7,7 +7,7 @@ import SectionHeading from '../components/SectionHeading';
 const PILLARS = [
   { icon: Gem, title: 'Considered design', text: 'Timeless, wearable pieces that never feel dated.' },
   { icon: Sparkles, title: 'Quality materials', text: '18k gold plated stainless steel with a lasting finish.' },
-  { icon: ShieldCheck, title: 'Kind to skin', text: 'Hypoallergenic and tarnish-resistant for daily wear.' },
+  { icon: ShieldCheck, title: 'Kind to skin', text: 'Tarnish-resistant with a lasting finish, safe for sensitive skin.' },
   { icon: Truck, title: 'UK shipping', text: 'Dispatched quickly with tracked delivery.' },
 ];
 

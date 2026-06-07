@@ -12,7 +12,7 @@ import Loader from '../components/Loader';
 
 const VALUES = [
   { icon: Sparkles, title: '18k Gold Plated', text: 'Premium gold plated stainless steel that keeps its shine.' },
-  { icon: ShieldCheck, title: 'Hypoallergenic', text: 'Skin-friendly, tarnish-resistant and made to last.' },
+  { icon: ShieldCheck, title: 'Skin Safe', text: 'Tarnish-resistant and gentle on skin, made to last.' },
   { icon: Truck, title: 'UK Delivery', text: 'Shipped from the UK with fast, tracked delivery.' },
   { icon: Gift, title: 'Gift Ready', text: 'Every piece arrives beautifully packaged.' },
 ];
@@ -56,6 +56,10 @@ export default function Home() {
                 Our Story
               </Link>
             </div>
+            <div className="mt-6 flex items-baseline gap-2 sm:hidden">
+              <span className="font-serif text-xl text-ink">From £12.99</span>
+              <span className="text-xs uppercase tracking-luxe text-ink/50">Everyday luxury</span>
+            </div>
           </motion.div>
 
           <motion.div
@@ -64,9 +68,22 @@ export default function Home() {
             transition={{ duration: 0.7, delay: 0.1 }}
             className="relative"
           >
-            <div className="flex aspect-[4/5] items-center justify-center rounded-3xl border border-gold/30 bg-ink text-gold shadow-soft">
-              <Logo variant="stacked" tagline />
-            </div>
+            {featured[0]?.images?.[0] ? (
+              <Link
+                to={`/product/${featured[0].slug}`}
+                className="block overflow-hidden rounded-3xl border border-gold/30 bg-ink shadow-soft"
+              >
+                <img
+                  src={featured[0].images[0]}
+                  alt={featured[0].name}
+                  className="aspect-[4/5] w-full object-contain p-4 transition-transform duration-[800ms] ease-out hover:scale-[1.04]"
+                />
+              </Link>
+            ) : (
+              <div className="flex aspect-[4/5] items-center justify-center rounded-3xl border border-gold/30 bg-ink text-gold shadow-soft">
+                <Logo variant="stacked" tagline />
+              </div>
+            )}
             <div className="absolute -bottom-5 -left-5 hidden rounded-2xl bg-gold px-6 py-4 text-ink shadow-gold sm:block">
               <span className="block font-serif text-2xl">From £12.99</span>
               <span className="text-xs uppercase tracking-luxe">Everyday luxury</span>
