@@ -366,4 +366,118 @@ tar czf backups/uploads-$(date +%F).tar.gz ./uploads
 Headings use **Playfair Display**, body uses **Inter**. The logo is recreated as
 an SVG in `frontend/src/components/Logo.tsx` — drop in the official artwork there
 (or in `frontend/public/`) to replace the monogram.
-# GlowAvenue
+
+---
+
+## 9. Image generation pipeline
+
+Generates product images via the OpenAI Images API (DALL-E 3).
+
+### Setup
+
+```bash
+pip install openai
+export OPENAI_API_KEY=sk-...
+```
+
+Add your products to `config/products.json`.
+
+### By profile
+
+```bash
+# Basic — hero only
+python scripts/generate_images.py --category necklaces --profile basic
+
+# Standard — hero + model
+python scripts/generate_images.py --category necklaces --profile standard
+
+# Premium — all four types
+python scripts/generate_images.py --category necklaces --profile premium
+```
+
+### Custom image types
+
+```bash
+python scripts/generate_images.py --category necklaces --types hero lifestyle
+
+python scripts/generate_images.py --category necklaces --types hero model closeup lifestyle
+```
+
+> `--types` overrides `--profile` when both are provided.
+
+### All flags
+
+| Flag | Description |
+|------|-------------|
+| `--category <name>` | Filter products by category |
+| `--product <id\|name>` | Process a single product |
+| `--all` | Process every product in `config/products.json` |
+| `--limit <n>` | Cap the number of products processed |
+| `--force` | Regenerate images that already exist |
+| `--dry-run` | Preview actions without calling the API |
+
+### Output
+
+```
+output/images/<category>/<product_id>/
+  01_hero.png
+  02_model.png
+  03_closeup.png
+  04_lifestyle.png
+```
+
+### Profiles
+
+| Profile | Images |
+|---------|--------|
+| `basic` | `01_hero.png` |
+| `standard` | `01_hero.png`, `02_model.png` |
+| `premium` | `01_hero.png`, `02_model.png`, `03_closeup.png`, `04_lifestyle.png` |
+
+### Manifest
+
+Every run writes / updates `product_manifest.csv` with:
+`product_id`, `product_name`, `category`, `generation_profile`,
+`requested_image_types`, `generated_image_types`, `generated_at`.
+
+### Image resizing
+
+After each image is generated it is automatically resized to a 2000×2000 PNG.
+The resize mode is controlled by `config/settings.json`:
+
+```json
+{
+  "resize_mode": "cover",
+  "resize_size": 2000
+}
+```
+
+| Mode | Behaviour |
+|------|-----------|
+| `cover` **(default)** | Resize so the shorter side reaches the target size, then center-crop the longer side. Fills the full frame — no white borders, no padding. |
+| `contain` | Fit inside the target frame preserving aspect ratio, pad remainder with white. |
+
+**Cover crop steps:**
+1. Open image.
+2. Scale proportionally so both dimensions are >= target (shorter side = target).
+3. Center-crop to exact target × target square.
+4. Save as PNG.
+
+You can also run the resizer standalone on existing files:
+
+```bash
+# Single file
+python scripts/resize_images.py output/images/earrings/p001/01_hero.png
+
+# Entire directory (all PNGs recursively)
+python scripts/resize_images.py output/images/ --mode cover
+
+# Override mode or size
+python scripts/resize_images.py img.png --mode contain --size 1024
+```
+
+### Smoke tests
+
+```bash
+python scripts/smoke_test.py
+```

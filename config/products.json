@@ -1,0 +1,17 @@
+[
+  {
+    "id": "p001",
+    "name": "Gold Hoop Earrings",
+    "category": "earrings"
+  },
+  {
+    "id": "p002",
+    "name": "Delicate Chain Necklace",
+    "category": "necklaces"
+  },
+  {
+    "id": "p003",
+    "name": "Crystal Tennis Bracelet",
+    "category": "bracelets"
+  }
+]
