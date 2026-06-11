@@ -481,3 +481,36 @@ python scripts/resize_images.py img.png --mode contain --size 1024
 ```bash
 python scripts/smoke_test.py
 ```
+
+## Import Products From External Assets
+
+Product assets remain outside this git repository. The importer recursively scans the supplied
+folder for `product.json` files and copies each product's images into the backend runtime
+`uploads/products` folder.
+
+From the `backend` folder:
+
+```powershell
+npm run import:products -- "C:\path\to\GlowAvenue_Product_Assets"
+```
+
+For the Docker Compose database, mount the external asset folder into a one-off backend container:
+
+```powershell
+docker compose run --rm -v "C:\path\to\GlowAvenue_Product_Assets:/assets" backend npm run import:products -- /assets
+```
+
+Each `product.json` must include a unique `sku`. If it contains an `images` array, that order is
+preserved and the first image becomes the cover. Otherwise, supported images in the same folder
+and its subfolders are imported in natural filename order.
+
+Safety behavior:
+
+- Products are upserted by SKU; the database is never wiped and products are never deleted.
+- New products are created as drafts.
+- Existing marketplace URLs are preserved when imported values are empty.
+- Existing price and quantity are preserved when imported values are `0`.
+- Existing publication status is preserved.
+- Assets are copied, not moved.
+- The importer does not access PostgreSQL volumes or migrations.
+- A timestamped JSON import report is written into the external asset folder.
