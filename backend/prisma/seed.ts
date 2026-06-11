@@ -102,21 +102,23 @@ const sampleProducts = [
 ];
 
 async function main() {
-  // Only seed an empty catalog. This protects real products + their image
-  // links from ever being overwritten on a rebuild or accidental re-run.
-  const productCount = await prisma.product.count();
-  if (productCount > 0) {
-    console.log(`Database already has ${productCount} product(s) — skipping seed (nothing changed).`);
-    return;
-  }
-
-  // Settings (upsert keeps this idempotent even if some keys already exist).
+  // Create missing defaults without ever overwriting admin-edited settings.
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     await prisma.setting.upsert({
       where: { key },
       update: {},
       create: { key, value },
     });
+  }
+
+  // Only seed an empty catalog. This protects real products + their image
+  // links from ever being overwritten on a rebuild or accidental re-run.
+  const productCount = await prisma.product.count();
+  if (productCount > 0) {
+    console.log(
+      `Ensured ${Object.keys(DEFAULT_SETTINGS).length} default setting(s); database already has ${productCount} product(s), so sample products were skipped.`,
+    );
+    return;
   }
 
   // Sample products (catalog is empty at this point).

@@ -28,6 +28,16 @@ export async function publicRoutes(app: FastifyInstance): Promise<void> {
     return products.map(serializePublicProduct);
   });
 
+  // One independently merchandised homepage hero product.
+  app.get('/api/products/hero', async (_request, reply) => {
+    const product = await prisma.product.findFirst({
+      where: { visible: true, heroFeatured: true, status: { in: ['published', 'out_of_stock'] } },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (!product) return reply.code(204).send();
+    return serializePublicProduct(product);
+  });
+
   // Single product by slug.
   app.get('/api/products/:slug', async (request, reply) => {
     const { slug } = request.params as { slug: string };

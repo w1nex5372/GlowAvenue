@@ -33,6 +33,10 @@ const EMPTY: ProductFormValues = {
   instagramUrl: '',
   riskLevel: 'safe',
   featured: false,
+  heroFeatured: false,
+  bestSeller: false,
+  newArrival: false,
+  trending: false,
 };
 
 const STATUS_LABELS: Record<ProductStatus, string> = {
@@ -116,6 +120,10 @@ export default function ProductForm() {
         instagramUrl: p.instagramUrl ?? '',
         riskLevel: p.riskLevel ?? 'safe',
         featured: p.featured ?? false,
+        heroFeatured: p.heroFeatured ?? false,
+        bestSeller: p.bestSeller ?? false,
+        newArrival: p.newArrival ?? false,
+        trending: p.trending ?? false,
         });
       })
       .catch((err) => {
@@ -293,7 +301,25 @@ export default function ProductForm() {
           <Section title="Internal">
             <Field label="Internal Notes"><textarea className="input min-h-32 resize-y" value={form.internalNotes} onChange={(e) => set('internalNotes', e.target.value)} /></Field>
             <div className="mt-4"><Field label="Risk level"><select className="input" value={form.riskLevel} onChange={(e) => set('riskLevel', e.target.value as RiskLevel)}><option value="safe">Safe</option><option value="risky">Risky</option><option value="bundle">Bundle / Mystery box</option></select></Field></div>
-            <label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={(e) => set('featured', e.target.checked)} /> Featured on homepage</label>
+          </Section>
+          <Section title="Merchandising" hint="Control how this product is presented across the storefront.">
+            <div className="space-y-3">
+              <MerchandisingToggle
+                label="Hero Featured"
+                hint="Use this product in the homepage hero. Selecting it replaces the current hero."
+                checked={form.heroFeatured}
+                onChange={(checked) => set('heroFeatured', checked)}
+              />
+              <MerchandisingToggle
+                label="Featured Collection"
+                hint="Include in the curated homepage collection."
+                checked={form.featured}
+                onChange={(checked) => set('featured', checked)}
+              />
+              <MerchandisingToggle label="Best Seller" checked={form.bestSeller} onChange={(checked) => set('bestSeller', checked)} />
+              <MerchandisingToggle label="New Arrival" checked={form.newArrival} onChange={(checked) => set('newArrival', checked)} />
+              <MerchandisingToggle label="Trending" checked={form.trending} onChange={(checked) => set('trending', checked)} />
+            </div>
           </Section>
           {isEdit && <button type="button" onClick={archive} className="flex w-full items-center justify-center gap-2 rounded-full border border-amber-300 px-6 py-3 text-sm font-medium text-amber-700 hover:bg-amber-50"><Archive size={16} /> Archive product</button>}
           {isEdit && <button type="button" onClick={() => { setDeleteConfirmation(''); setDeleteOpen(true); }} className="flex w-full items-center justify-center gap-2 rounded-full border border-red-300 px-6 py-3 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 size={16} /> Delete permanently</button>}
@@ -348,6 +374,18 @@ function ImageReadinessBadge({ value }: { value: ImageReadiness }) {
         ? 'bg-amber-100 text-amber-700'
         : 'bg-red-100 text-red-700';
   return <div className="flex items-center justify-between gap-3"><span>Images</span><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${style}`}>{value}</span></div>;
+}
+
+function MerchandisingToggle({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-ink/10 p-3 transition hover:border-gold/40 hover:bg-gold/5">
+      <span>
+        <span className="block text-sm font-medium text-ink">{label}</span>
+        {hint && <span className="mt-0.5 block text-xs leading-relaxed text-ink/45">{hint}</span>}
+      </span>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-1 accent-[#C89B3C]" />
+    </label>
+  );
 }
 
 function ProductStatusBadge({ value }: { value: ProductStatus }) {

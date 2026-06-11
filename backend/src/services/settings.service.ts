@@ -1,6 +1,19 @@
 import { prisma } from '../utils/prisma';
 import { DEFAULT_SETTINGS } from '../constants/settings';
 
+/** Materialize missing defaults without ever overwriting persisted settings. */
+export async function ensureDefaultSettings(): Promise<void> {
+  await prisma.$transaction(
+    Object.entries(DEFAULT_SETTINGS).map(([key, value]) =>
+      prisma.setting.upsert({
+        where: { key },
+        update: {},
+        create: { key, value },
+      }),
+    ),
+  );
+}
+
 /** Returns defaults overlaid with any values stored in the database. */
 export async function getMergedSettings(): Promise<Record<string, string>> {
   const rows = await prisma.setting.findMany();

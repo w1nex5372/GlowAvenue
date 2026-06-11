@@ -124,6 +124,10 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
         instagramUrl: '',
         riskLevel: product.riskLevel,
         featured: false,
+        heroFeatured: false,
+        bestSeller: false,
+        newArrival: false,
+        trending: false,
       };
     });
 
@@ -141,7 +145,12 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
 
       const slug = await generateUniqueSlug(typeof body.name === 'string' ? body.name : '');
       try {
-        const product = await prisma.product.create({ data: buildProductData(body, slug) });
+        const product = await prisma.$transaction(async (tx) => {
+          if (body.heroFeatured === true || body.heroFeatured === 'true') {
+            await tx.product.updateMany({ where: { heroFeatured: true }, data: { heroFeatured: false } });
+          }
+          return tx.product.create({ data: buildProductData(body, slug) });
+        });
         return reply.code(201).send(serializeProduct(product));
       } catch (err) {
         if (isUniqueViolation(err)) {
@@ -168,7 +177,15 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       }
 
       try {
-        const product = await prisma.product.update({ where: { id }, data });
+        const product = await prisma.$transaction(async (tx) => {
+          if (body.heroFeatured === true || body.heroFeatured === 'true') {
+            await tx.product.updateMany({
+              where: { heroFeatured: true, id: { not: id } },
+              data: { heroFeatured: false },
+            });
+          }
+          return tx.product.update({ where: { id }, data });
+        });
         return serializeProduct(product);
       } catch (err) {
         if (isUniqueViolation(err)) {
@@ -194,7 +211,15 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       if (!existing) return reply.code(404).send({ error: 'Product not found' });
       const product = await prisma.product.update({
         where: { id },
-        data: { status: 'archived', visible: false, featured: false },
+        data: {
+          status: 'archived',
+          visible: false,
+          featured: false,
+          heroFeatured: false,
+          bestSeller: false,
+          newArrival: false,
+          trending: false,
+        },
       });
       return serializeProduct(product);
     });

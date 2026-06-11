@@ -190,6 +190,10 @@ export function buildProductData(body: Record<string, unknown>, slug: string): P
     riskLevel: risk(body.riskLevel),
     visible: productStatus === 'published' || productStatus === 'out_of_stock',
     featured: bool(body.featured, false),
+    heroFeatured: bool(body.heroFeatured, false),
+    bestSeller: bool(body.bestSeller, false),
+    newArrival: bool(body.newArrival, false),
+    trending: bool(body.trending, false),
   };
 }
 
@@ -229,6 +233,10 @@ export function buildProductUpdate(body: Record<string, unknown>): Prisma.Produc
   if ('instagramUrl' in body) data.instagramUrl = cleanUrl(body.instagramUrl);
   if ('riskLevel' in body) data.riskLevel = risk(body.riskLevel);
   if ('featured' in body) data.featured = bool(body.featured, false);
+  if ('heroFeatured' in body) data.heroFeatured = bool(body.heroFeatured, false);
+  if ('bestSeller' in body) data.bestSeller = bool(body.bestSeller, false);
+  if ('newArrival' in body) data.newArrival = bool(body.newArrival, false);
+  if ('trending' in body) data.trending = bool(body.trending, false);
   return data;
 }
 

@@ -8,6 +8,7 @@ import { ensureUploadDir } from './services/upload.service';
 import { publicRoutes } from './routes/public.routes';
 import { adminRoutes } from './routes/admin.routes';
 import { uploadRoutes } from './routes/upload.routes';
+import { ensureDefaultSettings } from './services/settings.service';
 
 export async function buildApp() {
   const app = Fastify({
@@ -18,6 +19,8 @@ export async function buildApp() {
 
   // Uploads directory must exist before @fastify/static is registered.
   await ensureUploadDir();
+  // Persist missing defaults once; never overwrite settings edited by an admin.
+  await ensureDefaultSettings();
 
   await app.register(cors, { origin: true });
   await app.register(multipart, {

@@ -31,6 +31,10 @@ export interface Product {
   riskLevel?: RiskLevel;
   visible?: boolean;
   featured: boolean;
+  heroFeatured: boolean;
+  bestSeller: boolean;
+  newArrival: boolean;
+  trending: boolean;
   stockStatus: StockStatus;
   imageReadiness: ImageReadiness;
   imagesComplete: boolean;
@@ -66,4 +70,8 @@ export interface ProductFormValues {
   instagramUrl: string;
   riskLevel: RiskLevel;
   featured: boolean;
+  heroFeatured: boolean;
+  bestSeller: boolean;
+  newArrival: boolean;
+  trending: boolean;
 }

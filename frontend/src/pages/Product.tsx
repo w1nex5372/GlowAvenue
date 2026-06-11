@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronRight, Check, Truck, Share2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check, Gem, Globe2, PackageCheck, Share2, Sparkles } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
 import type { Product } from '../lib/types';
 import { formatPrice } from '../lib/format';
-import { useSettings } from '../lib/SettingsContext';
 import ProductGallery from '../components/ProductGallery';
 import MarketplaceButtons from '../components/MarketplaceButtons';
 import Loader from '../components/Loader';
 
-// Brand quality promises shown on every product (presentation, not per-item data).
-const FEATURES = ['Tarnish Resistant', 'Waterproof', '18k Gold Plated', 'UK Delivery'];
+const BRAND_PROMISES = [
+  { label: 'Carefully packaged', icon: PackageCheck },
+  { label: 'Worldwide shipping available', icon: Globe2 },
+  { label: 'Gold plated stainless steel', icon: Gem },
+];
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
-  const settings = useSettings();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -61,6 +62,8 @@ export default function ProductPage() {
   }
 
   const inStock = product.quantity > 0;
+  const fullDescription = product.fullDescription || product.description;
+  const features = (product.features ?? []).filter((feature) => feature.trim());
 
   return (
     <section className="bg-white">
@@ -104,42 +107,89 @@ export default function ProductPage() {
               )}
             </div>
 
-            <ul className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2.5 text-sm text-ink/60 sm:flex sm:flex-wrap">
-              {FEATURES.map((f) => (
-                <li key={f} className="inline-flex items-center gap-2">
-                  <Check size={15} className="shrink-0 text-gold-dark" /> {f}
-                </li>
-              ))}
-            </ul>
-
-            {product.description && (
-              <p className="mt-7 leading-relaxed text-ink/70">{product.description}</p>
+            {product.shortDescription && (
+              <p className="mt-5 text-base leading-relaxed text-ink/65 sm:text-lg">
+                {product.shortDescription}
+              </p>
             )}
 
-            <dl className="mt-7 space-y-2.5 border-y border-ink/10 py-5 text-sm">
-              <div className="flex gap-3">
-                <dt className="w-28 shrink-0 text-ink/45">Material</dt>
-                <dd className="text-ink/80">{product.material}</dd>
+            {features.length > 0 ? (
+              <div className="mt-7 rounded-2xl border border-gold/20 bg-cream/70 p-5">
+                <h2 className="flex items-center gap-2 text-xs uppercase tracking-luxe text-gold-dark">
+                  <Sparkles size={15} /> Highlights
+                </h2>
+                <ul className="mt-4 grid gap-3 text-sm text-ink/70 sm:grid-cols-2">
+                  {features.map((feature, index) => (
+                    <li key={`${feature}-${index}`} className="flex items-start gap-2.5">
+                      <Check size={15} className="mt-0.5 shrink-0 text-gold-dark" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="flex gap-3">
-                <dt className="w-28 shrink-0 text-ink/45">Category</dt>
-                <dd className="text-ink/80">{product.category}</dd>
-              </div>
-            </dl>
+            ) : (
+              <ul className="mt-7 grid gap-3 text-sm text-ink/60 sm:grid-cols-3">
+                {BRAND_PROMISES.map(({ label, icon: Icon }) => (
+                  <li key={label} className="flex items-center gap-2 rounded-xl bg-cream px-3 py-3">
+                    <Icon size={16} className="shrink-0 text-gold-dark" /> {label}
+                  </li>
+                ))}
+              </ul>
+            )}
 
-            <div className="mt-7">
+            {fullDescription && (
+              <div className="mt-8">
+                <h2 className="text-xs uppercase tracking-luxe text-ink/45">Description</h2>
+                <p className="mt-3 whitespace-pre-line leading-relaxed text-ink/70">{fullDescription}</p>
+              </div>
+            )}
+
+            <div className="mt-8 border-y border-ink/10 py-6">
+              <h2 className="text-xs uppercase tracking-luxe text-ink/45">Product details</h2>
+              <dl className="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+                <Detail label="Material" value={product.material} />
+                <Detail label="Category" value={product.category} />
+                <Detail label="Dimensions" value={product.dimensions} />
+                <Detail label="Weight" value={product.weight} />
+              </dl>
+            </div>
+
+            {(product.careGuide || product.shippingInfo) && (
+              <div className="divide-y divide-ink/10 border-b border-ink/10">
+                {product.careGuide && <Accordion title="Care guide" content={product.careGuide} />}
+                {product.shippingInfo && <Accordion title="Shipping information" content={product.shippingInfo} />}
+              </div>
+            )}
+
+            <div className="mt-8">
               <h2 className="mb-3 text-xs uppercase tracking-luxe text-ink/45">Where to buy</h2>
               <MarketplaceButtons product={product} variant="full" />
             </div>
-
-            {settings.shippingText && (
-              <p className="mt-6 inline-flex items-center gap-2 text-sm text-ink/55">
-                <Truck size={16} className="text-gold-dark" /> {settings.shippingText}
-              </p>
-            )}
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function Detail({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <div className="flex gap-3">
+      <dt className="w-24 shrink-0 text-ink/45">{label}</dt>
+      <dd className="text-ink/80">{value}</dd>
+    </div>
+  );
+}
+
+function Accordion({ title, content }: { title: string; content: string }) {
+  return (
+    <details className="group">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-sm font-medium text-ink marker:hidden">
+        {title}
+        <ChevronDown size={17} className="shrink-0 text-gold-dark transition-transform group-open:rotate-180" />
+      </summary>
+      <p className="whitespace-pre-line pb-5 text-sm leading-relaxed text-ink/65">{content}</p>
+    </details>
   );
 }

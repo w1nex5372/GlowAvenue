@@ -57,6 +57,7 @@ export const api = {
   getProducts: (category?: string) =>
     request<Product[]>('GET', `/products${category ? `?category=${encodeURIComponent(category)}` : ''}`),
   getFeatured: () => request<Product[]>('GET', '/products/featured'),
+  getHeroFeatured: () => request<Product | undefined>('GET', '/products/hero'),
   getProduct: (slug: string) => request<Product>('GET', `/products/${encodeURIComponent(slug)}`),
   getSettings: () => request<Settings>('GET', '/settings'),
 

@@ -34,11 +34,19 @@ model Product {
   riskLevel    String   @default("safe")
   visible      Boolean  @default(false)
   featured     Boolean  @default(false)
+  heroFeatured Boolean  @default(false)
+  bestSeller   Boolean  @default(false)
+  newArrival   Boolean  @default(false)
+  trending     Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([visible])
   @@index([featured])
+  @@index([heroFeatured])
+  @@index([bestSeller])
+  @@index([newArrival])
+  @@index([trending])
   @@index([status])
   @@index([category])
 }

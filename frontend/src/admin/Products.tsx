@@ -111,7 +111,7 @@ export default function AdminProducts() {
                 <tr key={p.id} className="hover:bg-cream/50">
                   <td className="px-3 py-3"><span className="block h-12 w-12 overflow-hidden rounded-lg bg-cream">{p.images?.[0] && <img src={p.images[0]} alt="" className="h-full w-full object-cover" />}</span></td>
                   <td className="px-3 py-3 font-medium">{p.sku || '—'}</td>
-                  <td className="max-w-56 px-3 py-3"><span className="block truncate font-medium">{p.name || 'Untitled draft'}</span><div className="mt-1 flex gap-1"><ImageIndicator value={p.imageReadiness} /><Indicator label="Markets" ready={p.marketplaceComplete} /></div></td>
+                  <td className="max-w-64 px-3 py-3"><span className="block truncate font-medium">{p.name || 'Untitled draft'}</span><div className="mt-1 flex flex-wrap gap-1"><ImageIndicator value={p.imageReadiness} /><Indicator label="Markets" ready={p.marketplaceComplete} />{p.heroFeatured && <MerchBadge label="Hero" />}{p.featured && <MerchBadge label="Featured" />}{p.bestSeller && <MerchBadge label="Best seller" />}{p.newArrival && <MerchBadge label="New" />}{p.trending && <MerchBadge label="Trending" />}</div></td>
                   <td className="px-3 py-3 text-ink/60">{p.category || '—'}</td>
                   <td className="px-3 py-3">{formatPrice(p.price)}</td>
                   <td className="px-3 py-3">{p.quantity}</td>
@@ -156,6 +156,10 @@ function ImageIndicator({ value }: { value: ImageReadiness }) {
         ? 'bg-amber-100 text-amber-700'
         : 'bg-red-100 text-red-700';
   return <span title={`${value} image set`} className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${style}`}>{value}</span>;
+}
+
+function MerchBadge({ label }: { label: string }) {
+  return <span className="rounded bg-gold/15 px-1.5 py-0.5 text-[10px] font-medium text-gold-dark">{label}</span>;
 }
 
 function ReadyLink({ ready, href }: { ready: boolean; href?: string | null }) {

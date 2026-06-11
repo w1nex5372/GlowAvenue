@@ -5,10 +5,10 @@ import { ArrowRight, Truck, Sparkles, ShieldCheck, Gift } from 'lucide-react';
 import { api } from '../lib/api';
 import type { Product } from '../lib/types';
 import { useSettings } from '../lib/SettingsContext';
+import { formatPrice } from '../lib/format';
 import Logo from '../components/Logo';
 import ProductCard from '../components/ProductCard';
 import SectionHeading from '../components/SectionHeading';
-import Loader from '../components/Loader';
 
 const VALUES = [
   { icon: Sparkles, title: '18k Gold Plated', text: 'Premium gold plated stainless steel that keeps its shine.' },
@@ -19,35 +19,42 @@ const VALUES = [
 
 export default function Home() {
   const settings = useSettings();
+  const [heroFeatured, setHeroFeatured] = useState<Product | undefined>();
   const [featured, setFeatured] = useState<Product[]>([]);
   const [latest, setLatest] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.getFeatured(), api.getProducts()])
-      .then(([f, all]) => {
+    Promise.all([api.getHeroFeatured(), api.getFeatured(), api.getProducts()])
+      .then(([hero, f, all]) => {
+        setHeroFeatured(hero);
         setFeatured(f);
-        setLatest(all.slice(0, 8));
+        const selectedNew = all.filter((product) => product.newArrival);
+        const remaining = all.filter((product) => !product.newArrival);
+        setLatest([...selectedNew, ...remaining].slice(0, 8));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
+  const hero = heroFeatured;
+
   return (
     <>
       {/* Hero */}
       <section className="bg-cream">
-        <div className="container-luxe grid items-center gap-12 py-16 md:grid-cols-2 md:py-24">
+        <div className="container-luxe grid items-center gap-12 py-14 md:min-h-[680px] md:grid-cols-[0.9fr_1.1fr] md:py-20 lg:gap-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.55 }}
+            className="min-w-0"
           >
             <span className="eyebrow">{settings.tagline || 'Timeless Elegance'}</span>
             <h1 className="mt-4 font-serif text-4xl leading-[1.1] sm:text-5xl lg:text-6xl">
               {settings.heroTitle}
             </h1>
-            <p className="mt-6 max-w-md text-lg text-ink/65">{settings.heroSubtitle}</p>
+            <p className="mt-6 max-w-lg text-base leading-relaxed text-ink/65 sm:text-lg">{settings.heroSubtitle}</p>
             <div className="mt-9 flex flex-wrap gap-4">
               <Link to="/collection" className="btn-gold">
                 Shop the Collection <ArrowRight size={18} />
@@ -56,38 +63,51 @@ export default function Home() {
                 Our Story
               </Link>
             </div>
-            <div className="mt-6 flex items-baseline gap-2 sm:hidden">
-              <span className="font-serif text-xl text-ink">From £12.99</span>
-              <span className="text-xs uppercase tracking-luxe text-ink/50">Everyday luxury</span>
-            </div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="relative"
+            transition={{ duration: 0.65, delay: 0.08 }}
+            className="relative min-w-0"
           >
-            {featured[0]?.images?.[0] ? (
+            {hero?.images?.[0] ? (
               <Link
-                to={`/product/${featured[0].slug}`}
-                className="block overflow-hidden rounded-3xl border border-gold/30 bg-ink shadow-soft"
+                to={`/product/${hero.slug}`}
+                className="group block rounded-[2rem] border border-gold/15 bg-white/70 p-3 shadow-card transition-shadow duration-500 hover:shadow-gold sm:p-5"
               >
-                <img
-                  src={featured[0].images[0]}
-                  alt={featured[0].name}
-                  className="aspect-[4/5] w-full object-contain p-4 transition-transform duration-[800ms] ease-out hover:scale-[1.04]"
-                />
+                <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-white via-cream/50 to-beige/40">
+                  <img
+                    src={hero.images[0]}
+                    alt={hero.name}
+                    fetchPriority="high"
+                    className="aspect-[4/5] w-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+                  />
+                  <div className="absolute bottom-4 left-4 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 text-ink shadow-soft backdrop-blur sm:bottom-5 sm:left-5 sm:px-5">
+                    <span className="block font-serif text-xl sm:text-2xl">From {formatPrice(hero.price)}</span>
+                    <span className="mt-0.5 block text-[0.6rem] uppercase tracking-luxe text-ink/50">Everyday luxury</span>
+                  </div>
+                </div>
+                <div className="px-2 pb-2 pt-5 sm:px-3 sm:pb-3 sm:pt-6">
+                  <span className="eyebrow">Featured Piece</span>
+                  <h2 className="mt-2 font-serif text-2xl leading-tight text-ink sm:text-3xl">{hero.name}</h2>
+                  {hero.shortDescription && (
+                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink/60 sm:text-base">
+                      {hero.shortDescription}
+                    </p>
+                  )}
+                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-gold-dark">
+                    Discover the piece <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+                  </span>
+                </div>
               </Link>
             ) : (
-              <div className="flex aspect-[4/5] items-center justify-center rounded-3xl border border-gold/30 bg-ink text-gold shadow-soft">
-                <Logo variant="stacked" tagline />
+              <div className="flex aspect-[4/5] items-center justify-center rounded-[2rem] border border-gold/15 bg-gradient-to-br from-white via-cream to-beige/60 p-10 text-gold shadow-card">
+                <div className="rounded-full border border-gold/15 bg-white/55 px-10 py-14 shadow-soft backdrop-blur-sm">
+                  <Logo variant="stacked" tagline />
+                </div>
               </div>
             )}
-            <div className="absolute -bottom-5 -left-5 hidden rounded-2xl bg-gold px-6 py-4 text-ink shadow-gold sm:block">
-              <span className="block font-serif text-2xl">From £12.99</span>
-              <span className="text-xs uppercase tracking-luxe">Everyday luxury</span>
-            </div>
           </motion.div>
         </div>
       </section>
@@ -95,12 +115,17 @@ export default function Home() {
       {/* Featured */}
       {(loading || featured.length > 0) && (
         <section className="bg-white">
-          <div className="container-luxe py-16 md:py-24">
-            <SectionHeading eyebrow="Curated" title="Featured Pieces" subtitle="A selection of our favourites, loved for their everyday elegance." />
+          <div className="container-luxe py-20 md:py-28">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <SectionHeading align="left" eyebrow="Curated for you" title="Featured Pieces" subtitle="Considered designs selected for their effortless, everyday elegance." />
+              <Link to="/collection" className="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-gold-dark transition hover:text-gold">
+                Explore the collection <ArrowRight size={16} />
+              </Link>
+            </div>
             {loading ? (
-              <Loader />
+              <ProductGridSkeleton />
             ) : (
-              <div className="mt-12 product-grid">
+              <div className="mt-12 product-grid md:mt-14">
                 {featured.map((p, i) => (
                   <ProductCard key={p.id} product={p} index={i} />
                 ))}
@@ -112,7 +137,7 @@ export default function Home() {
 
       {/* Why GlamAvenue */}
       <section className="bg-cream">
-        <div className="container-luxe py-16 md:py-24">
+        <div className="container-luxe py-20 md:py-28">
           <SectionHeading eyebrow="Why GlamAvenue" title="Luxury you can wear every day" />
           <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {VALUES.map(({ icon: Icon, title, text }, i) => (
@@ -138,14 +163,14 @@ export default function Home() {
       {/* New Arrivals */}
       {latest.length > 0 && (
         <section className="bg-white">
-          <div className="container-luxe py-16 md:py-24">
+          <div className="container-luxe py-20 md:py-28">
             <div className="flex items-end justify-between gap-4">
               <SectionHeading align="left" eyebrow="Just In" title="New Arrivals" />
               <Link to="/collection" className="hidden shrink-0 items-center gap-1 text-sm text-gold-dark hover:text-gold sm:inline-flex">
                 View all <ArrowRight size={16} />
               </Link>
             </div>
-            <div className="mt-12 product-grid">
+            <div className="mt-12 product-grid md:mt-14">
               {latest.map((p, i) => (
                 <ProductCard key={p.id} product={p} index={i} />
               ))}
@@ -197,5 +222,20 @@ export default function Home() {
         </div>
       </section>
     </>
+  );
+}
+
+function ProductGridSkeleton() {
+  return (
+    <div className="mt-12 product-grid md:mt-14" aria-label="Loading products">
+      {Array.from({ length: 4 }, (_, index) => (
+        <div key={index} className="animate-pulse">
+          <div className="aspect-square rounded-2xl bg-cream" />
+          <div className="mt-5 h-2.5 w-20 rounded bg-beige/50" />
+          <div className="mt-3 h-5 w-4/5 rounded bg-cream" />
+          <div className="mt-5 h-5 w-16 rounded bg-cream" />
+        </div>
+      ))}
+    </div>
   );
 }
