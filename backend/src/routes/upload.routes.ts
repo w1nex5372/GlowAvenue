@@ -5,6 +5,7 @@ import { pipeline } from 'node:stream/promises';
 import { ALLOWED_IMAGE_MIME } from '../config';
 import {
   buildFilename,
+  deleteLocalImages,
   ensureUploadDir,
   localPathForFile,
   publicUrlForFile,
@@ -21,6 +22,7 @@ export async function uploadRoutes(app: FastifyInstance): Promise<void> {
 
       for await (const part of request.files()) {
         if (!ALLOWED_IMAGE_MIME.has(part.mimetype)) {
+          await deleteLocalImages(urls);
           return reply
             .code(415)
             .send({ error: `Unsupported file type: ${part.mimetype}. Allowed: JPG, PNG, WEBP.` });
@@ -33,6 +35,13 @@ export async function uploadRoutes(app: FastifyInstance): Promise<void> {
           await pipeline(part.file, createWriteStream(dest));
         } catch {
           await unlink(dest).catch(() => {});
+          await deleteLocalImages(urls);
+          return reply.code(413).send({ error: 'File too large. Maximum 5MB per image.' });
+        }
+
+        if (part.file.truncated) {
+          await unlink(dest).catch(() => {});
+          await deleteLocalImages(urls);
           return reply.code(413).send({ error: 'File too large. Maximum 5MB per image.' });
         }
 

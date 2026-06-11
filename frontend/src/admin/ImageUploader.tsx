@@ -2,6 +2,10 @@ import { useRef, useState } from 'react';
 import { UploadCloud, X, Loader2, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
 
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const IMAGE_ROLES = ['Hero', 'Model', 'Close-up', 'Lifestyle'];
+
 interface Props {
   value: string[];
   onChange: (urls: string[]) => void;
@@ -24,9 +28,20 @@ export default function ImageUploader({ value, onChange }: Props) {
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setError('');
+    const selected = Array.from(files);
+    const invalidType = selected.find((file) => !ALLOWED_TYPES.has(file.type));
+    const oversized = selected.find((file) => file.size > MAX_FILE_BYTES);
+    if (invalidType) {
+      setError(`${invalidType.name}: only JPG, PNG and WEBP images are allowed.`);
+      return;
+    }
+    if (oversized) {
+      setError(`${oversized.name}: maximum file size is 5MB.`);
+      return;
+    }
     setUploading(true);
     try {
-      const { urls } = await api.upload(Array.from(files));
+      const { urls } = await api.upload(selected);
       onChange([...value, ...urls]);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Upload failed');
@@ -78,11 +93,10 @@ export default function ImageUploader({ value, onChange }: Props) {
           >
             <img src={url} alt="" className="h-full w-full object-contain p-2" draggable={false} />
 
-            {i === 0 && (
-              <span className="absolute left-1.5 top-1.5 rounded bg-gold px-1.5 py-0.5 text-[0.6rem] font-medium text-ink">
-                Cover
-              </span>
-            )}
+            <span className="absolute left-1.5 top-1.5 rounded bg-ink/80 px-1.5 py-0.5 text-[0.6rem] font-medium text-white">
+              {IMAGE_ROLES[i] ?? `Image ${i + 1}`}
+              {i === 0 ? ' / Cover' : ''}
+            </span>
 
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-0.5 bg-ink/55 py-1.5 opacity-0 backdrop-blur-sm transition group-hover:opacity-100">
               <button

@@ -9,7 +9,9 @@ import { deleteLocalImages } from '../services/upload.service';
 import {
   buildProductData,
   buildProductUpdate,
+  getSkuPrefix,
   validateProductCreate,
+  validateProductUpdate,
 } from '../services/product.service';
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
@@ -38,8 +40,91 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     admin.addHook('preHandler', app.authenticate);
 
     admin.get('/api/admin/products', async () => {
-      const products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } });
+      const products = await prisma.product.findMany({ orderBy: { updatedAt: 'desc' } });
       return products.map(serializeProduct);
+    });
+
+    admin.get('/api/admin/products/export.csv', async (_request, reply) => {
+      const products = await prisma.product.findMany({ orderBy: { updatedAt: 'desc' } });
+      const rows = products.map(serializeProduct);
+      const columns: Array<[string, (product: ReturnType<typeof serializeProduct>) => unknown]> = [
+        ['SKU', (p) => p.sku],
+        ['Name', (p) => p.name],
+        ['Category', (p) => p.category],
+        ['Price', (p) => p.price],
+        ['Quantity', (p) => p.quantity],
+        ['Stock Status', (p) => p.stockStatus],
+        ['Status', (p) => p.status],
+        ['Material', (p) => p.material],
+        ['Short Description', (p) => p.shortDescription],
+        ['Full Description', (p) => p.fullDescription],
+        ['Features', (p) => p.features.join(' | ')],
+        ['Care Guide', (p) => p.careGuide],
+        ['Shipping Info', (p) => p.shippingInfo],
+        ['Dimensions', (p) => p.dimensions],
+        ['Weight', (p) => p.weight],
+        ['Website URL/slug', (p) => `/product/${p.slug}`],
+        ['eBay URL', (p) => p.ebayUrl],
+        ['TikTok URL', (p) => p.tiktokUrl],
+        ['Facebook URL', (p) => p.facebookUrl],
+        ['Instagram URL', (p) => p.instagramUrl],
+        ['Internal Notes', (p) => p.internalNotes],
+      ];
+      const csv = [
+        columns.map(([heading]) => csvCell(heading)).join(','),
+        ...rows.map((product) => columns.map(([, value]) => csvCell(value(product))).join(',')),
+      ].join('\r\n');
+      return reply
+        .header('Content-Type', 'text/csv; charset=utf-8')
+        .header('Content-Disposition', 'attachment; filename="glamavenue-products.csv"')
+        .send(`\uFEFF${csv}`);
+    });
+
+    admin.get('/api/admin/products/sku-suggestion', async (request, reply) => {
+      const { category = '' } = request.query as { category?: string };
+      const prefix = getSkuPrefix(category);
+      if (!prefix) {
+        return reply.code(400).send({ error: 'Auto SKU is available for Bracelets, Necklaces, Earrings and Rings' });
+      }
+      const products = await prisma.product.findMany({
+        where: { sku: { startsWith: `GA-${prefix}-` } },
+        select: { sku: true },
+      });
+      const highest = products.reduce((max, product) => {
+        const match = product.sku.match(new RegExp(`^GA-${prefix}-(\\d+)$`, 'i'));
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0);
+      return { sku: `GA-${prefix}-${String(highest + 1).padStart(4, '0')}` };
+    });
+
+    admin.get('/api/admin/products/:id/duplicate', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const product = await prisma.product.findUnique({ where: { id } });
+      if (!product) return reply.code(404).send({ error: 'Product not found' });
+      return {
+        name: '',
+        sku: '',
+        category: product.category,
+        price: Number(product.price),
+        quantity: 0,
+        material: product.material,
+        shortDescription: '',
+        fullDescription: '',
+        features: [],
+        careGuide: product.careGuide ?? '',
+        shippingInfo: product.shippingInfo ?? '',
+        dimensions: product.dimensions ?? '',
+        weight: product.weight ?? '',
+        internalNotes: '',
+        status: 'draft',
+        images: [],
+        ebayUrl: '',
+        tiktokUrl: '',
+        facebookUrl: '',
+        instagramUrl: '',
+        riskLevel: product.riskLevel,
+        featured: false,
+      };
     });
 
     admin.get('/api/admin/products/:id', async (request, reply) => {
@@ -54,7 +139,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       const errors = validateProductCreate(body);
       if (errors.length) return reply.code(400).send({ error: errors.join(', ') });
 
-      const slug = await generateUniqueSlug(String(body.name));
+      const slug = await generateUniqueSlug(typeof body.name === 'string' ? body.name : '');
       try {
         const product = await prisma.product.create({ data: buildProductData(body, slug) });
         return reply.code(201).send(serializeProduct(product));
@@ -72,6 +157,8 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       if (!existing) return reply.code(404).send({ error: 'Product not found' });
 
       const body = (request.body ?? {}) as Record<string, unknown>;
+      const errors = validateProductUpdate(existing, body);
+      if (errors.length) return reply.code(400).send({ error: errors.join(', ') });
       const data = buildProductUpdate(body);
 
       // Keep the slug in sync if the name changed.
@@ -101,6 +188,17 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       return { ok: true };
     });
 
+    admin.post('/api/admin/products/:id/archive', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const existing = await prisma.product.findUnique({ where: { id } });
+      if (!existing) return reply.code(404).send({ error: 'Product not found' });
+      const product = await prisma.product.update({
+        where: { id },
+        data: { status: 'archived', visible: false, featured: false },
+      });
+      return serializeProduct(product);
+    });
+
     // --- Settings ---
     admin.get('/api/admin/settings', async () => getMergedSettings());
 
@@ -113,4 +211,10 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
 
 function isUniqueViolation(err: unknown): boolean {
   return typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2002';
+}
+
+function csvCell(value: unknown): string {
+  const raw = value === null || value === undefined ? '' : String(value);
+  const text = typeof value === 'string' && /^\s*[=+\-@]/.test(value) ? `'${raw}` : raw;
+  return `"${text.replace(/"/g, '""')}"`;
 }

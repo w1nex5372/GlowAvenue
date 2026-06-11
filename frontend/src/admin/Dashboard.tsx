@@ -14,7 +14,7 @@ import { api, ApiError } from '../lib/api';
 import type { Product } from '../lib/types';
 import Loader from '../components/Loader';
 
-const LOW_STOCK_THRESHOLD = 3;
+const LOW_STOCK_THRESHOLD = 2;
 
 export default function Dashboard() {
   const navigate = useNavigate();

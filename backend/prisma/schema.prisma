@@ -17,19 +17,30 @@ model Product {
   quantity     Int
   material     String
   description  String
+  shortDescription String?
+  fullDescription  String?
+  features         Json     @default("[]")
+  careGuide        String?
+  shippingInfo     String?
+  dimensions       String?
+  weight           String?
+  internalNotes    String?
+  status           String   @default("draft")
   images       Json
   ebayUrl      String?
   tiktokUrl    String?
   facebookUrl  String?
   instagramUrl String?
   riskLevel    String   @default("safe")
-  visible      Boolean  @default(true)
+  visible      Boolean  @default(false)
   featured     Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([visible])
   @@index([featured])
+  @@index([status])
+  @@index([category])
 }
 
 model Setting {

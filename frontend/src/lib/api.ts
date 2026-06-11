@@ -1,5 +1,5 @@
 import { auth } from './auth';
-import type { Product, Settings } from './types';
+import type { Product, ProductFormValues, Settings } from './types';
 
 const BASE = '/api';
 
@@ -72,6 +72,20 @@ export const api = {
   adminUpdateProduct: (id: string, data: Record<string, unknown>) =>
     request<Product>('PUT', `/admin/products/${id}`, data),
   adminDeleteProduct: (id: string) => request<{ ok: boolean }>('DELETE', `/admin/products/${id}`),
+  adminArchiveProduct: (id: string) => request<Product>('POST', `/admin/products/${id}/archive`),
+  adminDuplicateProduct: (id: string) =>
+    request<ProductFormValues>('GET', `/admin/products/${id}/duplicate`),
+  adminSuggestSku: (category: string) =>
+    request<{ sku: string }>('GET', `/admin/products/sku-suggestion?category=${encodeURIComponent(category)}`),
+  adminExportProducts: async () => {
+    const token = auth.getToken();
+    const res = await fetch(`${BASE}/admin/products/export.csv`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (res.status === 401) auth.clear();
+    if (!res.ok) throw new ApiError(res.status, 'Failed to export products');
+    return res.blob();
+  },
 
   // --- Admin: settings ---
   adminGetSettings: () => request<Settings>('GET', '/admin/settings'),

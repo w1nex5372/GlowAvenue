@@ -1,4 +1,6 @@
 export type RiskLevel = 'safe' | 'risky' | 'bundle';
+export type ProductStatus = 'draft' | 'published' | 'out_of_stock' | 'archived';
+export type StockStatus = 'In stock' | 'Low stock' | 'Out of stock';
 
 export interface Product {
   id: string;
@@ -10,6 +12,15 @@ export interface Product {
   quantity: number;
   material: string;
   description: string;
+  shortDescription?: string | null;
+  fullDescription?: string | null;
+  features: string[];
+  careGuide?: string | null;
+  shippingInfo?: string | null;
+  dimensions?: string | null;
+  weight?: string | null;
+  internalNotes?: string | null;
+  status: ProductStatus;
   images: string[];
   ebayUrl?: string | null;
   tiktokUrl?: string | null;
@@ -19,6 +30,10 @@ export interface Product {
   riskLevel?: RiskLevel;
   visible?: boolean;
   featured: boolean;
+  stockStatus: StockStatus;
+  imagesComplete: boolean;
+  marketplaceComplete: boolean;
+  websiteReady: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,13 +47,20 @@ export interface ProductFormValues {
   price: string;
   quantity: string;
   material: string;
-  description: string;
+  shortDescription: string;
+  fullDescription: string;
+  features: string[];
+  careGuide: string;
+  shippingInfo: string;
+  dimensions: string;
+  weight: string;
+  internalNotes: string;
+  status: ProductStatus;
   images: string[];
   ebayUrl: string;
   tiktokUrl: string;
   facebookUrl: string;
   instagramUrl: string;
   riskLevel: RiskLevel;
-  visible: boolean;
   featured: boolean;
 }

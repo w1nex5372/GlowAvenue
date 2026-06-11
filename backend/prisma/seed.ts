@@ -37,9 +37,12 @@ const sampleProducts = [
     material: '18k Gold Plated Stainless Steel',
     description:
       'A delicate everyday bracelet with a timeless gold finish. Tarnish-resistant, hypoallergenic and made to shine for years.',
+    fullDescription:
+      'A delicate everyday bracelet with a timeless gold finish. Tarnish-resistant, hypoallergenic and made to shine for years.',
     images: [] as string[],
     riskLevel: 'safe',
     visible: true,
+    status: 'published',
     featured: true,
   },
   {
@@ -52,9 +55,12 @@ const sampleProducts = [
     material: '18k Gold Plated Stainless Steel',
     description:
       'An elegant layering necklace that elevates any outfit. Lightweight, comfortable and effortlessly luxurious.',
+    fullDescription:
+      'An elegant layering necklace that elevates any outfit. Lightweight, comfortable and effortlessly luxurious.',
     images: [] as string[],
     riskLevel: 'safe',
     visible: true,
+    status: 'published',
     featured: true,
   },
   {
@@ -67,9 +73,12 @@ const sampleProducts = [
     material: '18k Gold Plated Stainless Steel',
     description:
       'Classic gold hoops with a refined, polished finish. The perfect finishing touch for day or evening.',
+    fullDescription:
+      'Classic gold hoops with a refined, polished finish. The perfect finishing touch for day or evening.',
     images: [] as string[],
     riskLevel: 'safe',
     visible: true,
+    status: 'published',
     featured: false,
   },
   {
@@ -82,9 +91,12 @@ const sampleProducts = [
     material: '18k Gold Plated Stainless Steel',
     description:
       'A curated surprise selection of GlamAvenue pieces, beautifully packaged. The ultimate treat or gift.',
+    fullDescription:
+      'A curated surprise selection of GlamAvenue pieces, beautifully packaged. The ultimate treat or gift.',
     images: [] as string[],
     riskLevel: 'bundle',
     visible: true,
+    status: 'published',
     featured: true,
   },
 ];

@@ -1,9 +1,30 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, type Product } from '@prisma/client';
+import crypto from 'node:crypto';
 
 export const RISK_LEVELS = ['safe', 'risky', 'bundle'] as const;
+export const PRODUCT_STATUSES = ['draft', 'published', 'out_of_stock', 'archived'] as const;
+export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
+
+export const DEFAULT_MATERIAL = '18k Gold Plated Stainless Steel';
+export const DEFAULT_CARE_GUIDE =
+  'Avoid water, perfumes and harsh chemicals. Store in a dry place and clean gently with a soft cloth.';
+export const DEFAULT_SHIPPING_INFO =
+  'Worldwide shipping available. Carefully packaged and dispatched as soon as possible.';
+
+const SKU_PREFIXES: Record<string, string> = {
+  bracelets: 'BR',
+  necklaces: 'NE',
+  earrings: 'EA',
+  rings: 'RI',
+};
 
 function str(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function optionalStr(value: unknown): string | null {
+  const valueString = str(value);
+  return valueString || null;
 }
 
 function num(value: unknown, fallback = 0): number {
@@ -24,67 +45,174 @@ function risk(value: unknown): string {
     : 'safe';
 }
 
-function images(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+function status(value: unknown, fallback: ProductStatus = 'draft'): ProductStatus {
+  return typeof value === 'string' && (PRODUCT_STATUSES as readonly string[]).includes(value)
+    ? (value as ProductStatus)
+    : fallback;
+}
+
+function isValidStatus(value: unknown): value is ProductStatus {
+  return typeof value === 'string' && (PRODUCT_STATUSES as readonly string[]).includes(value);
+}
+
+function resolvedStatus(
+  body: Record<string, unknown>,
+  fallback: ProductStatus = 'draft',
+): ProductStatus {
+  if ('status' in body) return status(body.status, fallback);
+  if ('visible' in body) return bool(body.visible, false) ? 'published' : 'draft';
+  return fallback;
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.map((item) => str(item)).filter(Boolean)
+    : typeof value === 'string'
+      ? value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean)
+      : [];
 }
 
 function cleanUrl(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  return trimmed.length ? trimmed : null;
+  return optionalStr(value);
 }
 
-/** Validation for creating a product. Returns a list of human-readable errors. */
-export function validateProductCreate(body: Record<string, unknown>): string[] {
+export function getStockStatus(quantity: number): 'Out of stock' | 'Low stock' | 'In stock' {
+  if (quantity <= 0) return 'Out of stock';
+  if (quantity <= 2) return 'Low stock';
+  return 'In stock';
+}
+
+export function getPublishErrors(product: Record<string, unknown>): string[] {
   const errors: string[] = [];
-  if (!str(body.name)) errors.push('Name is required');
-  if (!str(body.sku)) errors.push('SKU is required');
-  if (!str(body.category)) errors.push('Category is required');
-  if (!str(body.material)) errors.push('Material is required');
-  if (num(body.price, -1) < 0) errors.push('Price must be a positive number');
-  if (num(body.quantity, -1) < 0) errors.push('Quantity must be zero or more');
+  if (!str(product.name)) errors.push('name');
+  if (!str(product.sku) || str(product.sku).startsWith('DRAFT-')) errors.push('sku');
+  if (!str(product.category)) errors.push('category');
+  if (num(product.price, -1) < 0) errors.push('price');
+  if (num(product.quantity, -1) < 0) errors.push('quantity');
+  if (!str(product.material)) errors.push('material');
+  if (!str(product.shortDescription)) errors.push('short description');
+  if (!str(product.fullDescription) && !str(product.description)) errors.push('full description');
+  if (stringArray(product.images).length < 4) errors.push('at least 4 images');
   return errors;
 }
 
-/** Full data object for a Product.create call. */
+export function validateProductCreate(body: Record<string, unknown>): string[] {
+  const errors: string[] = [];
+  if ('status' in body && !isValidStatus(body.status)) errors.push('Invalid product status');
+  if ('price' in body && num(body.price, -1) < 0) errors.push('Price must be zero or more');
+  if ('quantity' in body && num(body.quantity, -1) < 0) errors.push('Quantity must be zero or more');
+  if (resolvedStatus(body) === 'published') {
+    errors.push(...getPublishErrors(body).map((field) => `Required before publishing: ${field}`));
+  }
+  return errors;
+}
+
+export function validateProductUpdate(existing: Product, body: Record<string, unknown>): string[] {
+  const errors: string[] = [];
+  if ('status' in body && !isValidStatus(body.status)) errors.push('Invalid product status');
+  if ('price' in body && num(body.price, -1) < 0) errors.push('Price must be zero or more');
+  if ('quantity' in body && num(body.quantity, -1) < 0) errors.push('Quantity must be zero or more');
+
+  const merged = { ...existing, ...body };
+  const targetStatus = resolvedStatus(body, status(existing.status));
+  if (targetStatus !== 'published') return errors;
+
+  const publishErrors = getPublishErrors(merged);
+  const existingPublishErrors = new Set(
+    getPublishErrors(existing as unknown as Record<string, unknown>),
+  );
+
+  // Legacy published products may retain fields that were already missing,
+  // but edits cannot make a previously valid required field invalid.
+  if (existing.status === 'published' && existingPublishErrors.size > 0) {
+    errors.push(
+      ...publishErrors
+        .filter((field) => !existingPublishErrors.has(field))
+        .map((field) => `Required before publishing: ${field}`),
+    );
+    const existingImageCount = stringArray(existing.images).length;
+    const mergedImageCount = stringArray(merged.images).length;
+    if (existingImageCount < 4 && mergedImageCount < existingImageCount) {
+      errors.push('Published legacy products cannot reduce their existing image count');
+    }
+    return errors;
+  }
+
+  errors.push(...publishErrors.map((field) => `Required before publishing: ${field}`));
+  return errors;
+}
+
 export function buildProductData(body: Record<string, unknown>, slug: string): Prisma.ProductUncheckedCreateInput {
+  const productStatus = resolvedStatus(body);
+  const fullDescription = str(body.fullDescription) || str(body.description);
   return {
-    sku: str(body.sku),
+    sku: str(body.sku) || `DRAFT-${crypto.randomUUID()}`,
     name: str(body.name),
     slug,
     category: str(body.category),
     price: new Prisma.Decimal(num(body.price)),
     quantity: Math.trunc(num(body.quantity)),
-    material: str(body.material),
-    description: str(body.description),
-    images: images(body.images),
+    material: str(body.material) || DEFAULT_MATERIAL,
+    description: fullDescription,
+    shortDescription: optionalStr(body.shortDescription),
+    fullDescription: optionalStr(fullDescription),
+    features: stringArray(body.features),
+    careGuide: optionalStr(body.careGuide) ?? DEFAULT_CARE_GUIDE,
+    shippingInfo: optionalStr(body.shippingInfo) ?? DEFAULT_SHIPPING_INFO,
+    dimensions: optionalStr(body.dimensions),
+    weight: optionalStr(body.weight),
+    internalNotes: optionalStr(body.internalNotes),
+    status: productStatus,
+    images: stringArray(body.images),
     ebayUrl: cleanUrl(body.ebayUrl),
     tiktokUrl: cleanUrl(body.tiktokUrl),
     facebookUrl: cleanUrl(body.facebookUrl),
     instagramUrl: cleanUrl(body.instagramUrl),
     riskLevel: risk(body.riskLevel),
-    visible: bool(body.visible, true),
+    visible: productStatus === 'published' || productStatus === 'out_of_stock',
     featured: bool(body.featured, false),
   };
 }
 
-/** Partial data object for a Product.update call — only sets provided keys. */
 export function buildProductUpdate(body: Record<string, unknown>): Prisma.ProductUncheckedUpdateInput {
   const data: Prisma.ProductUncheckedUpdateInput = {};
-  if ('sku' in body) data.sku = str(body.sku);
+  if ('sku' in body && str(body.sku)) data.sku = str(body.sku);
   if ('name' in body) data.name = str(body.name);
   if ('category' in body) data.category = str(body.category);
   if ('price' in body) data.price = new Prisma.Decimal(num(body.price));
   if ('quantity' in body) data.quantity = Math.trunc(num(body.quantity));
   if ('material' in body) data.material = str(body.material);
-  if ('description' in body) data.description = str(body.description);
-  if ('images' in body) data.images = images(body.images);
+  if ('shortDescription' in body) data.shortDescription = optionalStr(body.shortDescription);
+  if ('fullDescription' in body || 'description' in body) {
+    const fullDescription = str(body.fullDescription) || str(body.description);
+    data.fullDescription = optionalStr(fullDescription);
+    data.description = fullDescription;
+  }
+  if ('features' in body) data.features = stringArray(body.features);
+  if ('careGuide' in body) data.careGuide = optionalStr(body.careGuide);
+  if ('shippingInfo' in body) data.shippingInfo = optionalStr(body.shippingInfo);
+  if ('dimensions' in body) data.dimensions = optionalStr(body.dimensions);
+  if ('weight' in body) data.weight = optionalStr(body.weight);
+  if ('internalNotes' in body) data.internalNotes = optionalStr(body.internalNotes);
+  if ('status' in body) {
+    const productStatus = status(body.status);
+    data.status = productStatus;
+    data.visible = productStatus === 'published' || productStatus === 'out_of_stock';
+  } else if ('visible' in body) {
+    const productStatus = bool(body.visible, false) ? 'published' : 'draft';
+    data.status = productStatus;
+    data.visible = productStatus === 'published';
+  }
+  if ('images' in body) data.images = stringArray(body.images);
   if ('ebayUrl' in body) data.ebayUrl = cleanUrl(body.ebayUrl);
   if ('tiktokUrl' in body) data.tiktokUrl = cleanUrl(body.tiktokUrl);
   if ('facebookUrl' in body) data.facebookUrl = cleanUrl(body.facebookUrl);
   if ('instagramUrl' in body) data.instagramUrl = cleanUrl(body.instagramUrl);
   if ('riskLevel' in body) data.riskLevel = risk(body.riskLevel);
-  if ('visible' in body) data.visible = bool(body.visible, true);
   if ('featured' in body) data.featured = bool(body.featured, false);
   return data;
+}
+
+export function getSkuPrefix(category: string): string | null {
+  return SKU_PREFIXES[category.trim().toLowerCase()] ?? null;
 }
