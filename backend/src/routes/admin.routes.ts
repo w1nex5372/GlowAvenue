@@ -183,8 +183,8 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       const existing = await prisma.product.findUnique({ where: { id } });
       if (!existing) return reply.code(404).send({ error: 'Product not found' });
 
+      await deleteLocalImages(existing.images, app.log);
       await prisma.product.delete({ where: { id } });
-      await deleteLocalImages(existing.images);
       return { ok: true };
     });
 

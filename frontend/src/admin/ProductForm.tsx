@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
-import { Archive, ArrowLeft, Copy, Save, Sparkles } from 'lucide-react';
+import { Archive, ArrowLeft, Copy, Save, Sparkles, Trash2, X } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
 import type { ProductFormValues, ProductStatus, RiskLevel, StockStatus } from '../lib/types';
 import ImageUploader from './ImageUploader';
@@ -76,6 +76,9 @@ export default function ProductForm() {
   const [suggesting, setSuggesting] = useState(false);
   const [error, setError] = useState('');
   const [legacyPublished, setLegacyPublished] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const request = id ? api.adminGetProduct(id) : duplicateId ? api.adminDuplicateProduct(duplicateId) : null;
@@ -159,6 +162,21 @@ export default function ProductForm() {
       navigate('/admin/products');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to archive product');
+    }
+  };
+
+  const deletePermanently = async () => {
+    if (!id || deleteConfirmation !== 'DELETE') return;
+    setDeleting(true);
+    setError('');
+    try {
+      await api.adminDeleteProduct(id);
+      navigate('/admin/products');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) navigate('/admin/login');
+      else setError(err instanceof ApiError ? err.message : 'Failed to delete product');
+      setDeleting(false);
+      setDeleteOpen(false);
     }
   };
 
@@ -267,8 +285,37 @@ export default function ProductForm() {
             <label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={(e) => set('featured', e.target.checked)} /> Featured on homepage</label>
           </Section>
           {isEdit && <button type="button" onClick={archive} className="flex w-full items-center justify-center gap-2 rounded-full border border-amber-300 px-6 py-3 text-sm font-medium text-amber-700 hover:bg-amber-50"><Archive size={16} /> Archive product</button>}
+          {isEdit && <button type="button" onClick={() => { setDeleteConfirmation(''); setDeleteOpen(true); }} className="flex w-full items-center justify-center gap-2 rounded-full border border-red-300 px-6 py-3 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 size={16} /> Delete permanently</button>}
         </div>
       </div>
+
+      {deleteOpen && (
+        <div role="dialog" aria-modal="true" aria-labelledby="delete-product-title" className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/70 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="delete-product-title" className="font-serif text-xl">Delete product permanently?</h2>
+                <p className="mt-2 text-sm text-red-700">This permanently removes the product and its uploaded images. This cannot be undone.</p>
+              </div>
+              <button type="button" onClick={() => setDeleteOpen(false)} disabled={deleting} aria-label="Close" className="rounded-lg p-1 text-ink/50 hover:bg-ink/5"><X size={18} /></button>
+            </div>
+            <label className="field-label mt-5">Type DELETE to confirm</label>
+            <input
+              className="input"
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+              autoFocus
+            />
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setDeleteOpen(false)} disabled={deleting} className="btn-outline">Cancel</button>
+              <button type="button" onClick={deletePermanently} disabled={deleting || deleteConfirmation !== 'DELETE'} className="inline-flex items-center gap-2 rounded-full bg-red-700 px-6 py-3 text-sm font-medium text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-40">
+                <Trash2 size={16} /> {deleting ? 'Deleting...' : 'Delete permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
