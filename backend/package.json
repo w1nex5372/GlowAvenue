@@ -13,7 +13,8 @@
     "migrate:deploy": "prisma migrate deploy",
     "seed": "tsx prisma/seed.ts",
     "hash": "tsx scripts/hash-password.ts",
-    "import:products": "tsx scripts/import-products-from-assets.ts"
+    "import:products": "tsx scripts/import-products-from-assets.ts",
+    "test:import-products": "tsx scripts/test-import-products-from-assets.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

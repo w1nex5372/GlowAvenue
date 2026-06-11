@@ -155,6 +155,18 @@ async function findImageFiles(folder: string): Promise<string[]> {
   return results;
 }
 
+function naturalImageOrder(productFolder: string, images: string[]): string[] {
+  return images.sort((a, b) =>
+    path.relative(productFolder, a).localeCompare(path.relative(productFolder, b), undefined, {
+      numeric: true,
+    }),
+  );
+}
+
+function isUploadProductUrl(entry: string): boolean {
+  return entry.replace(/\\/g, '/').startsWith('/uploads/products/');
+}
+
 async function loadProductJson(productJsonPath: string): Promise<RawProduct> {
   const parsed = JSON.parse(await readFile(productJsonPath, 'utf8')) as unknown;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -163,15 +175,34 @@ async function loadProductJson(productJsonPath: string): Promise<RawProduct> {
   return parsed as RawProduct;
 }
 
-async function findImages(
+export async function findImages(
   sourceFolder: string,
   productFolder: string,
   raw: RawProduct,
 ): Promise<string[]> {
   const explicitEntries = extractImageEntries(raw);
   if (explicitEntries.length) {
+    const localImages = naturalImageOrder(productFolder, await findImageFiles(productFolder));
     const images: string[] = [];
     for (const entry of explicitEntries) {
+      if (isUploadProductUrl(entry)) {
+        const normalizedEntry = entry.replace(/\\/g, '/');
+        const basename = normalizedEntry.slice('/uploads/products/'.length);
+        if (!basename || basename.includes('/') || basename === '.' || basename === '..') {
+          throw new Error(`Invalid upload image URL: ${entry}`);
+        }
+        if (!IMAGE_EXTENSIONS.has(path.extname(basename).toLowerCase())) {
+          throw new Error(`Unsupported image type: ${entry}`);
+        }
+        const matches = localImages.filter((image) => path.basename(image) === basename);
+        if (matches.length === 0) return localImages;
+        if (matches.length > 1) {
+          throw new Error(`Multiple local images match upload URL basename "${basename}".`);
+        }
+        images.push(matches[0]);
+        continue;
+      }
+
       const sourcePath = path.resolve(productFolder, entry.replace(/[\\/]+/g, path.sep));
       const relative = path.relative(sourceFolder, sourcePath);
       if (relative.startsWith('..') || path.isAbsolute(relative)) {
@@ -186,12 +217,7 @@ async function findImages(
     return images;
   }
 
-  return (await findImageFiles(productFolder))
-    .sort((a, b) =>
-      path.relative(productFolder, a).localeCompare(path.relative(productFolder, b), undefined, {
-        numeric: true,
-      }),
-    );
+  return naturalImageOrder(productFolder, await findImageFiles(productFolder));
 }
 
 async function prepareProducts(sourceFolder: string): Promise<PreparedProduct[]> {
@@ -441,11 +467,13 @@ async function main(): Promise<void> {
   if (report.totals.failed > 0) process.exitCode = 1;
 }
 
-main()
-  .catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+if (require.main === module) {
+  main()
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

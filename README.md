@@ -504,6 +504,9 @@ Each `product.json` must include a unique `sku`. If it contains an `images` arra
 preserved and the first image becomes the cover. Otherwise, supported images in the same folder
 and its subfolders are imported in natural filename order.
 
+Prepared `/uploads/products/<filename>` image entries are treated as filename hints. The importer
+matches them to files with the same basename anywhere inside that product folder.
+
 Safety behavior:
 
 - Products are upserted by SKU; the database is never wiped and products are never deleted.
