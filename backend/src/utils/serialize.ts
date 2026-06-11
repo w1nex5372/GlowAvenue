@@ -1,5 +1,11 @@
 import type { Product } from '@prisma/client';
-import { getPublishErrors, getStockStatus } from '../services/product.service';
+import {
+  getImageReadiness,
+  getPublishErrors,
+  getStockStatus,
+  PREMIUM_IMAGE_COUNT,
+  PUBLISH_MIN_IMAGES,
+} from '../services/product.service';
 
 /**
  * Convert a Prisma Product into a JSON-safe shape:
@@ -22,7 +28,9 @@ export function serializeProduct(product: Product) {
     features,
     images,
     stockStatus: getStockStatus(product.quantity),
-    imagesComplete: images.length >= 4,
+    imageReadiness: getImageReadiness(images),
+    imagesComplete: images.length >= PUBLISH_MIN_IMAGES,
+    imagesPremium: images.length >= PREMIUM_IMAGE_COUNT,
     marketplaceComplete,
     websiteReady: getPublishErrors({ ...product, fullDescription, images }).length === 0,
   };
@@ -33,7 +41,16 @@ export function serializeProduct(product: Product) {
  * Risk level must NEVER be exposed on the public website.
  */
 export function serializePublicProduct(product: Product) {
-  const { riskLevel, visible, internalNotes, websiteReady, imagesComplete, marketplaceComplete, ...rest } =
-    serializeProduct(product);
+  const {
+    riskLevel,
+    visible,
+    internalNotes,
+    websiteReady,
+    imageReadiness,
+    imagesComplete,
+    imagesPremium,
+    marketplaceComplete,
+    ...rest
+  } = serializeProduct(product);
   return rest;
 }

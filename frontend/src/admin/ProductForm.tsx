@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 're
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
 import { Archive, ArrowLeft, Copy, Save, Sparkles, Trash2, X } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
-import type { ProductFormValues, ProductStatus, RiskLevel, StockStatus } from '../lib/types';
+import type { ImageReadiness, ProductFormValues, ProductStatus, RiskLevel, StockStatus } from '../lib/types';
 import ImageUploader from './ImageUploader';
 import Loader from '../components/Loader';
 
@@ -62,6 +62,13 @@ function stockStatus(quantity: string): StockStatus {
 function StockBadge({ value }: { value: StockStatus }) {
   const style = value === 'In stock' ? 'bg-green-100 text-green-700' : value === 'Low stock' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
   return <span className={`rounded-full px-3 py-1 text-xs font-medium ${style}`}>{value}</span>;
+}
+
+function imageReadiness(count: number): ImageReadiness {
+  if (count === 0) return 'Missing';
+  if (count === 1) return 'Partial';
+  if (count >= 4) return 'Premium';
+  return 'Ready';
 }
 
 export default function ProductForm() {
@@ -131,13 +138,17 @@ export default function ProductForm() {
     if (!form.material.trim()) missing.push('material');
     if (!form.shortDescription.trim()) missing.push('short description');
     if (!form.fullDescription.trim()) missing.push('full description');
-    if (form.images.length < 4) missing.push('at least 4 images');
+    if (form.images.length < 2) missing.push('at least 2 images');
     return missing;
   }, [form]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    if (form.status === 'draft' && form.images.length < 1) {
+      setError('Draft products require at least 1 image.');
+      return;
+    }
     if (form.status === 'published' && publishErrors.length && !legacyPublished) {
       setError(`Cannot publish. Missing: ${publishErrors.join(', ')}.`);
       return;
@@ -257,7 +268,7 @@ export default function ProductForm() {
             </div>
           </Section>
 
-          <Section title="Images" hint={`${form.images.length}/4 minimum images for publishing. First image is the cover.`}>
+          <Section title="Images" hint="1 image minimum for drafts, 2 for publishing, and 4 for Premium. First image is the cover.">
             <ImageUploader value={form.images} onChange={(urls) => set('images', urls)} />
           </Section>
 
@@ -275,7 +286,7 @@ export default function ProductForm() {
           <Section title="Readiness">
             <div className="space-y-3 text-sm">
               <Readiness label="Website ready" ready={publishErrors.length === 0} />
-              <Readiness label="Images complete" ready={form.images.length >= 4} />
+              <ImageReadinessBadge value={imageReadiness(form.images.length)} />
               <Readiness label="Marketplace complete" ready={Boolean(form.ebayUrl && form.tiktokUrl && form.facebookUrl && form.instagramUrl)} />
             </div>
           </Section>
@@ -326,6 +337,17 @@ function Field({ label, hint, wide, children }: { label: string; hint?: string; 
 
 function Readiness({ label, ready }: { label: string; ready: boolean }) {
   return <div className="flex items-center justify-between gap-3"><span>{label}</span><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ready ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{ready ? 'Complete' : 'Missing'}</span></div>;
+}
+
+function ImageReadinessBadge({ value }: { value: ImageReadiness }) {
+  const style = value === 'Premium'
+    ? 'bg-gold/15 text-gold-dark'
+    : value === 'Ready'
+      ? 'bg-green-100 text-green-700'
+      : value === 'Partial'
+        ? 'bg-amber-100 text-amber-700'
+        : 'bg-red-100 text-red-700';
+  return <div className="flex items-center justify-between gap-3"><span>Images</span><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${style}`}>{value}</span></div>;
 }
 
 function ProductStatusBadge({ value }: { value: ProductStatus }) {

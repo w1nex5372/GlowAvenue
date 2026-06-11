@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Archive, Check, Copy, Download, ExternalLink, Pencil, Plus, Search, X } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
-import type { Product, ProductStatus, StockStatus } from '../lib/types';
+import type { ImageReadiness, Product, ProductStatus, StockStatus } from '../lib/types';
 import { formatPrice } from '../lib/format';
 import Loader from '../components/Loader';
 
@@ -47,7 +47,7 @@ export default function AdminProducts() {
       (!category || p.category === category) &&
       (!stock || p.stockStatus === stock) &&
       (!status || p.status === status) &&
-      (!missingImages || !p.imagesComplete) &&
+      (!missingImages || p.images.length === 0) &&
       (!missingLinks || !p.marketplaceComplete),
     );
   }, [products, query, category, stock, status, missingImages, missingLinks]);
@@ -111,7 +111,7 @@ export default function AdminProducts() {
                 <tr key={p.id} className="hover:bg-cream/50">
                   <td className="px-3 py-3"><span className="block h-12 w-12 overflow-hidden rounded-lg bg-cream">{p.images?.[0] && <img src={p.images[0]} alt="" className="h-full w-full object-cover" />}</span></td>
                   <td className="px-3 py-3 font-medium">{p.sku || '—'}</td>
-                  <td className="max-w-56 px-3 py-3"><span className="block truncate font-medium">{p.name || 'Untitled draft'}</span><div className="mt-1 flex gap-1"><Indicator label="4+ images" ready={p.imagesComplete} /><Indicator label="Markets" ready={p.marketplaceComplete} /></div></td>
+                  <td className="max-w-56 px-3 py-3"><span className="block truncate font-medium">{p.name || 'Untitled draft'}</span><div className="mt-1 flex gap-1"><ImageIndicator value={p.imageReadiness} /><Indicator label="Markets" ready={p.marketplaceComplete} /></div></td>
                   <td className="px-3 py-3 text-ink/60">{p.category || '—'}</td>
                   <td className="px-3 py-3">{formatPrice(p.price)}</td>
                   <td className="px-3 py-3">{p.quantity}</td>
@@ -145,6 +145,17 @@ function Badge({ label, style }: { label: string; style: string }) {
 
 function Indicator({ label, ready }: { label: string; ready: boolean }) {
   return <span title={label} className={`rounded px-1.5 py-0.5 text-[10px] ${ready ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{ready ? '✓' : '!'}</span>;
+}
+
+function ImageIndicator({ value }: { value: ImageReadiness }) {
+  const style = value === 'Premium'
+    ? 'bg-gold/15 text-gold-dark'
+    : value === 'Ready'
+      ? 'bg-green-100 text-green-700'
+      : value === 'Partial'
+        ? 'bg-amber-100 text-amber-700'
+        : 'bg-red-100 text-red-700';
+  return <span title={`${value} image set`} className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${style}`}>{value}</span>;
 }
 
 function ReadyLink({ ready, href }: { ready: boolean; href?: string | null }) {

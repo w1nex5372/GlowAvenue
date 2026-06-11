@@ -10,6 +10,10 @@ export const DEFAULT_CARE_GUIDE =
   'Avoid water, perfumes and harsh chemicals. Store in a dry place and clean gently with a soft cloth.';
 export const DEFAULT_SHIPPING_INFO =
   'Worldwide shipping available. Carefully packaged and dispatched as soon as possible.';
+export const DRAFT_MIN_IMAGES = 1;
+export const PUBLISH_MIN_IMAGES = 2;
+export const PREMIUM_IMAGE_COUNT = 4;
+export type ImageReadiness = 'Missing' | 'Partial' | 'Ready' | 'Premium';
 
 const SKU_PREFIXES: Record<string, string> = {
   bracelets: 'BR',
@@ -82,6 +86,14 @@ export function getStockStatus(quantity: number): 'Out of stock' | 'Low stock' |
   return 'In stock';
 }
 
+export function getImageReadiness(images: unknown): ImageReadiness {
+  const count = stringArray(images).length;
+  if (count === 0) return 'Missing';
+  if (count < PUBLISH_MIN_IMAGES) return 'Partial';
+  if (count >= PREMIUM_IMAGE_COUNT) return 'Premium';
+  return 'Ready';
+}
+
 export function getPublishErrors(product: Record<string, unknown>): string[] {
   const errors: string[] = [];
   if (!str(product.name)) errors.push('name');
@@ -92,7 +104,7 @@ export function getPublishErrors(product: Record<string, unknown>): string[] {
   if (!str(product.material)) errors.push('material');
   if (!str(product.shortDescription)) errors.push('short description');
   if (!str(product.fullDescription) && !str(product.description)) errors.push('full description');
-  if (stringArray(product.images).length < 4) errors.push('at least 4 images');
+  if (stringArray(product.images).length < PUBLISH_MIN_IMAGES) errors.push('at least 2 images');
   return errors;
 }
 
@@ -101,7 +113,11 @@ export function validateProductCreate(body: Record<string, unknown>): string[] {
   if ('status' in body && !isValidStatus(body.status)) errors.push('Invalid product status');
   if ('price' in body && num(body.price, -1) < 0) errors.push('Price must be zero or more');
   if ('quantity' in body && num(body.quantity, -1) < 0) errors.push('Quantity must be zero or more');
-  if (resolvedStatus(body) === 'published') {
+  const targetStatus = resolvedStatus(body);
+  if (targetStatus === 'draft' && stringArray(body.images).length < DRAFT_MIN_IMAGES) {
+    errors.push('Draft products require at least 1 image');
+  }
+  if (targetStatus === 'published') {
     errors.push(...getPublishErrors(body).map((field) => `Required before publishing: ${field}`));
   }
   return errors;
@@ -115,6 +131,9 @@ export function validateProductUpdate(existing: Product, body: Record<string, un
 
   const merged = { ...existing, ...body };
   const targetStatus = resolvedStatus(body, status(existing.status));
+  if (targetStatus === 'draft' && stringArray(merged.images).length < DRAFT_MIN_IMAGES) {
+    errors.push('Draft products require at least 1 image');
+  }
   if (targetStatus !== 'published') return errors;
 
   const publishErrors = getPublishErrors(merged);
@@ -132,7 +151,7 @@ export function validateProductUpdate(existing: Product, body: Record<string, un
     );
     const existingImageCount = stringArray(existing.images).length;
     const mergedImageCount = stringArray(merged.images).length;
-    if (existingImageCount < 4 && mergedImageCount < existingImageCount) {
+    if (existingImageCount < PUBLISH_MIN_IMAGES && mergedImageCount < existingImageCount) {
       errors.push('Published legacy products cannot reduce their existing image count');
     }
     return errors;

@@ -1,6 +1,7 @@
 export type RiskLevel = 'safe' | 'risky' | 'bundle';
 export type ProductStatus = 'draft' | 'published' | 'out_of_stock' | 'archived';
 export type StockStatus = 'In stock' | 'Low stock' | 'Out of stock';
+export type ImageReadiness = 'Missing' | 'Partial' | 'Ready' | 'Premium';
 
 export interface Product {
   id: string;
@@ -31,7 +32,9 @@ export interface Product {
   visible?: boolean;
   featured: boolean;
   stockStatus: StockStatus;
+  imageReadiness: ImageReadiness;
   imagesComplete: boolean;
+  imagesPremium: boolean;
   marketplaceComplete: boolean;
   websiteReady: boolean;
   createdAt: string;
